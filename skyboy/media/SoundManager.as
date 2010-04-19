@@ -166,7 +166,7 @@ internal class DataStore {
 		s = _s;
 		sT = _sT;
 		loops = _loops;
-		listner = [flash.events.Event.SOUND_COMPLETE, function(e:flash.events.Event):void { loop(); }, false, 0, false];
+		listner = [flash.events.Event.SOUND_COMPLETE, function(e:flash.events.Event):void { e.target.removeEventListener(e.type, arguments.callee); loop(); }, false, 0, false];
 	}
 	public function loop():Boolean {
 		if (loops > 0) {
