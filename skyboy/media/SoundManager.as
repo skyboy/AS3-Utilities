@@ -75,7 +75,7 @@
 		 * @return	Boolean: true if the sound was sucessfully started playing
 		 */
 		public function playSound(id:int, loops:int=0, sndTransform:SoundTransform=null, startTime:Number=0.0, callback:Function=null):Boolean {
-			if (Sounds[id]) {
+			if (valid(id)) {
 				if (canPlay(id)) {
 					increment(id);
 					var a:DataStore = new DataStore(Sounds[id], loops, sndTransform);
@@ -98,7 +98,7 @@
 		 * @return	int: the ID of the now playing SoundChannel object
 		 */
 		public function playMusic(id:int, loops:int = 0, sndTransform:SoundTransform = null, startTime:Number = 0.0):int {
-			if (id < Sounds.length && Sounds[id]) {
+			if (valid(id)) {
 				if (canPlay(id)) {
 					increment(id);
 					var a:DataStore = new DataStore(Sounds[id], loops, sndTransform);
@@ -111,7 +111,7 @@
 			} else {
 				throw new Error("Sound #" + id + " does not exist.", 2068);
 			}
-			return NaN;
+			return -1;
 		}
 		/**
 		 * stopMusic
@@ -119,7 +119,7 @@
 		 * @return	Boolean: true if the sound was sucessfully stopped
 		 */
 		public function stopMusic(id:int):Boolean {
-			if (channels[id]) {
+			if (id != -1 && channels[id]) {
 				try {
 					channels[id].stop();
 					channels[id].dispatchEvent(new Event(Event.SOUND_COMPLETE));
@@ -133,6 +133,9 @@
 		/**
 		 * protected functions
 		**/
+		protected function valid(id:int):Boolean {
+			return id < Sounds.length && Sounds[id];
+		}
 		protected function increment(id:int):void {
 			++currentPlayingSounds;
 			++soundTypes[id];
