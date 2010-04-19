@@ -152,7 +152,6 @@
 			if (~b) {
 				channels[b] = null;
 			}
-			trace (channels, b, dStore);
 			--soundTypes[id];
 			--currentPlayingSounds;
 		}
