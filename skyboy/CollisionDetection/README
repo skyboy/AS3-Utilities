@@ -1,4 +1,4 @@
 Using PixelPerfect CollisionDetection:
 	Import it into your project
 	Somewhere in the begining call registerRoot on either the base DisplayObject you're using, or the stage
-	Call PixelPerfect.test(obj1, obj2) and check the return value, true means thre is a collision.
+	Call PixelPerfect.test(obj1, obj2) and check the return value, true means there is a collision.

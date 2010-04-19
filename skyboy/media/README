@@ -1,0 +1,10 @@
+using SoundManager:
+	import SoundManager into your project
+	create a new instance:
+		soundManager = new SoundManager(maxSounds, maxPlayable, maxOfTypePlayable, delayForPlays)
+	add sounds:
+		var snd:Sound = new Sound();
+		snd.load("your/sound.mp3");
+		backgroundMusic = soundManager.addSound(snd);
+	play sounds:
+		playingMusic = soundManager.playMusic(backgroundMusic)
