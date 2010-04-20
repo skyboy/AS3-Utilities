@@ -7,7 +7,7 @@
 	import flash.media.Sound;
 	import flash.media.SoundChannel;
 	import flash.media.SoundTransform;
-	import flash.utils.Timer;
+	import flash.utils.setTimeout;
 	/**
 	 * @author skyboy
 	 */
@@ -81,7 +81,7 @@
 					var a:DataStore = new DataStore(Sounds[id], loops, sndTransform);
 					a.play(startTime);
 					callback ||= function(e:Event):void{ };
-					a.addEventListener(Event.SOUND_COMPLETE, function(e:Event):void { soundEnded(e, id, arguments.callee); callback.call(null, e); } );
+					a.addEventListener(Event.SOUND_COMPLETE, function(e:Event):void { soundEnded(e, id, null); callback.call(null, e); } );
 					return true;
 				}
 			} else {
@@ -103,7 +103,7 @@
 					increment(id);
 					var a:DataStore = new DataStore(Sounds[id], loops, sndTransform);
 					a.play(startTime);
-					a.addEventListener(Event.SOUND_COMPLETE, function(e:Event, func:Function = null):void { soundEnded(e, id, a); } );
+					a.addEventListener(Event.SOUND_COMPLETE, function(e:Event, func:Function = null):void { e.target.removeEventListener(e.type, arguments.callee); soundEnded(e, id, a); } );
 					var b:int = channels.indexOf(null);
 					channels[b] = a;
 					return b;
@@ -140,9 +140,7 @@
 			++currentPlayingSounds;
 			++soundTypes[id];
 			switchTypeCanPlay(id);
-			var a:Timer = new Timer(timeDelay);
-			a.addEventListener(TimerEvent.TIMER, function(e:TimerEvent):void { switchTypeCanPlay(id); e.target.removeEventListener(TimerEvent.TIMER, arguments.callee); e.target.stop(); } );
-			a.start();
+			setTimeout(switchTypeCanPlay, timeDelay, id);
 		}
 		protected function canPlay(id:int):Boolean {
 			return soundTimers[id] && currentPlayingSounds < maxPlayableSounds && soundTypes[id] < maxPlayableOfType;
@@ -150,10 +148,12 @@
 		protected function switchTypeCanPlay(id:int):void {
 			soundTimers[id] = !soundTimers[id];
 		}
-		protected function soundEnded(e:Event, id:int, dStore:DataStore):void {
-			var b:int = channels.indexOf(dStore);
-			if (~b) {
-				channels[b] = null;
+		protected function soundEnded(e:Event, id:int, dStore:DataStore = null):void {
+			if (dStore) {
+				var b:int = channels.indexOf(dStore);
+				if (~b) {
+					channels[b] = null;
+				}
 			}
 			--soundTypes[id];
 			--currentPlayingSounds;
@@ -166,7 +166,8 @@ internal class DataStore {
 		s = _s;
 		sT = _sT;
 		loops = _loops;
-		listner = [flash.events.Event.SOUND_COMPLETE, function(e:flash.events.Event):void { e.target.removeEventListener(e.type, arguments.callee); loop(); }, false, 0, false];
+		var a:DataStore = this;
+		listner = [flash.events.Event.SOUND_COMPLETE, function(e:flash.events.Event):void { e.target.removeEventListener(e.type, arguments.callee); if (a.listner[1] == arguments.callee) loop(); else { e.target.addEventListener(e.type, a.listner[1]); e.target.dispatchEvent(e); } }, false, 0, false];
 	}
 	public function loop():Boolean {
 		if (loops > 0) {
@@ -185,7 +186,7 @@ internal class DataStore {
 	}
 	public function addEventListener(type:String, listener:Function, useCapture:Boolean = false, priority:int = 0, useWeakReference:Boolean = false):void {
 		var a:DataStore = this;
-		listner = [type, function(e:flash.events.Event):void { e.target.removeEventListener(e.type, arguments.callee); var remove:Boolean = loop(); if (remove) { if (listener.length == 2) try { listener(e, a); return; } catch (er:*) { } e.target.addEventListener(e.type, listener, useCapture, priority, useWeakReference); e.target.dispatchEvent( new flash.events.Event(e.type) ) } }, useCapture, priority, useWeakReference];
+		listner = [type, function(e:flash.events.Event):void { e.target.removeEventListener(e.type, arguments.callee); var remove:Boolean = loop(); if (remove) { if (listener.length == 2) try { listener(e, a); return; } catch (er:*) { } e.target.addEventListener(e.type, listener, useCapture, priority, useWeakReference); e.target.dispatchEvent(e) } }, useCapture, priority, useWeakReference];
 	}
 	public function stop():void {
 		loops = 0;
