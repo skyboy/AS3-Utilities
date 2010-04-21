@@ -10,6 +10,9 @@
 	 */
 	final public class PixelPerfect {
 		protected static var root:DisplayObjectContainer, cTransformA:ColorTransform = new ColorTransform(1, 0, 0, 1, 255, 0, 0, 255), cTransformB:ColorTransform = new ColorTransform(0, 1, 0, 1, 0, 255, 0, 255), _lastRect:Rectangle = null;
+		/**
+		 * [read-only] rect: last Rectangle from a hitTest
+		 */
 		public function get rect():Rectangle {
 			return _lastRect;
 		}
