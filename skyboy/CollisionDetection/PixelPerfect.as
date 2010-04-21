@@ -9,7 +9,10 @@
 	 * @author skyboy
 	 */
 	final public class PixelPerfect {
-		protected static var root:DisplayObjectContainer, cTransformA:ColorTransform = new ColorTransform(1, 0, 0, 1, 255, 0, 0, 255), cTransformB:ColorTransform = new ColorTransform(0, 1, 0, 1, 0, 255, 0, 255);
+		protected static var root:DisplayObjectContainer, cTransformA:ColorTransform = new ColorTransform(1, 0, 0, 1, 255, 0, 0, 255), cTransformB:ColorTransform = new ColorTransform(0, 1, 0, 1, 0, 255, 0, 255), _lastRect:Rectangle = null;
+		public function get rect():Rectangle {
+			return _lastRect;
+		}
 		/**
 		 * @param	_root: object to use as the root for testing
 		 * @return	null
@@ -44,7 +47,7 @@
 					b.lock();
 					b.draw(objA, aM, cTransformA);
 					b.draw(objB, bM, cTransformB, "add");
-					if (b.getColorBoundsRect(0xffffffff, 0xffffff00, true).width) {
+					if ((_lastRect = b.getColorBoundsRect(0xffffffff, 0xffffff00, true)).width) {
 						return true;
 					}
 				}
@@ -65,7 +68,7 @@
 					b.lock();
 					b.draw(objA, aM, cTransformA);
 					b.draw(objB, bM, cTransformB, "add");
-					var rect:Rectangle = b.getColorBoundsRect(0xffffffff, 0xffffff00, true);
+					var rect:Rectangle = _lastRect = b.getColorBoundsRect(0xffffffff, 0xffffff00, true);
 					if (rect.width) {
 						return rect;
 					}
