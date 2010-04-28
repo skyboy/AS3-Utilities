@@ -109,6 +109,11 @@
 			}
 			return false;
 		}
+		/**
+		 * @param	objA: first object to test
+		 * @param	objB: second object to test
+		 * @return	Rectangle: the bounding rectangle of the collision or null
+		 */
 		public static function hitRect(objA:DisplayObject, objB:DisplayObject):Rectangle {
 			if (objA.parent && objB.parent) {
 				var oAB:Rectangle = objA.getBounds(root), oBB:Rectangle = objB.getBounds(root);
