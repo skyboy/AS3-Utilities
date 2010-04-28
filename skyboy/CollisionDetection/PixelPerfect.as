@@ -5,7 +5,8 @@
 	 * and more free code.
 	 *
 	 *
-	 * Copyright (c) 2010 skyboy.
+	 * Copyright (c) 2010, skyboy
+	 *    All rights reserved.
 	 *
 	 * Permission is hereby granted, free of charge, to any person
 	 * obtaining a copy of this software and associated documentation
@@ -18,18 +19,37 @@
 	 *
 	 * ^ Attribution will be given to:
 	 *  	skyboy, http://www.kongregate.com/accounts/skyboy;
-	 *  	http://github.com/skyboy
-	 * ^ The above copyright notice and this permission notice shall be
-	 * included in all copies or substantial portions of the Software.
+	 *  	http://github.com/skyboy; http://skybov.deviantart.com
 	 *
-	 * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-	 * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
-	 * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
-	 * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
-	 * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
-	 * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-	 * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
-	 * OTHER DEALINGS IN THE SOFTWARE.
+	 * ^ Redistributions of source code must retain the above copyright notice,
+	 * this list of conditions and the following disclaimer in all copies or
+	 * substantial portions of the Software.
+	 *
+	 * ^ Redistributions of modified source code must be marked as such, with
+	 * the modifications marked and ducumented and the modifer's name clearly
+	 * listed as having modified the source code.
+	 *
+	 * ^ Redistributions of source code may not add to, subtract from, or in
+	 * any other way modify the above copyright notice, this list of conditions,
+	 * or the following disclaimer for any reason.
+	 *
+	 * ^ Redistributions in binary form must reproduce the above copyright
+	 * notice, this list of conditions and the following disclaimer in the
+	 * documentation and/or other materials provided with the distribution.
+	 *
+	 * THE SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS
+	 * IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT
+	 * NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
+	 * PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS
+	 * OR COPYRIGHT HOLDERS OR CONTRIBUTORS  BE LIABLE FOR ANY CLAIM, DIRECT,
+	 * INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+	 * OR OTHER LIABILITY,(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+	 * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR
+	 * BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+	 * WHETHER AN ACTION OF IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+	 * NEGLIGENCE OR OTHERWISE) ARISING FROM, OUT OF, IN CONNECTION OR
+	 * IN ANY OTHER WAY OUT OF THE USE OF OR OTHER DEALINGS WITH THIS
+	 * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 	 */
 	import flash.display.BitmapData;
 	import flash.display.DisplayObject;
