@@ -1,6 +1,6 @@
 ﻿package skyboy.media {
 	/**
-	 * SoundManager by skyboy. April 10th 2010.
+	 * SoundManager by skyboy. April 20th 2010.
 	 * Visit http://github.com/skyboy for documentation, updates
 	 * and more free code.
 	 *
