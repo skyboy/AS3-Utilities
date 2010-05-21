@@ -23,7 +23,7 @@ package skyboy.managers {
 			var i:Object = e.target, bullets:Vector.<Object> = intern::bullets;
 			if (i == null || ~bullets.indexOf(i)) return;
 			var dex:int = bullets.indexOf(null);
-			if (!~dex) throw new Error("Too many bullets");
+			if (dex == -1) throw new Error("Too many bullets");
 			bullets[dex] = i;
 			++bulletCount;
 		}
