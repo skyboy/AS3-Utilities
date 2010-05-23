@@ -30,7 +30,7 @@ package skyboy.managers {
 		private function removeBullet(e:Event):void {
 			var i:Object = e.target, bullets:Vector.<Object> = intern::bullets;
 			var dex:int = bullets.indexOf(i);
-			if (~dex) return;
+			if (dex == -1) return;
 			bullets[dex] = null;
 			--bulletCount;
 		}
