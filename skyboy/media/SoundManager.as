@@ -61,7 +61,12 @@
 	import flash.media.SoundTransform;
 	import flash.utils.setTimeout;
 	/**
-	 * @author skyboy
+	 * @author	skyboy
+	 * @update	15/6/2010: add methods from UnknownGuardian
+	 */
+	/**
+	 * @editor	UnknownGuardian
+	 * @editor
 	 */
 	public class SoundManager {
 		/**
@@ -171,7 +176,7 @@
 		 * @return	Boolean: true if the sound was sucessfully stopped
 		 */
 		public function stopMusic(id:int):Boolean {
-			if (id != -1 && channels[id]) {
+			if (valid(id)) {
 				try {
 					channels[id].stop();
 					channels[id].dispatchEvent(new Event(Event.SOUND_COMPLETE));
@@ -183,10 +188,47 @@
 			return false;
 		}
 		/**
+		 * changeVolume
+		 * @author  UnknownGuardian
+		 * @param   id
+		 * @return  Boolean: true if the sound volume was succssfully changed
+		 * @update 15/6/2010(skyboy): added method, changed to use setTransform, and made it so other parts of the tasnform aren't changed
+		 */
+		public function changeVolume(id:int, volume:Number = 1):Boolean {
+			if (valid(id)) {
+				var sT:SoundTransform = getTransform(id);
+				sT.volume = volume; // let flash throw it's own error here
+				return setTransform(sT);
+			}
+		}
+		/**
+		 * setTransform
+		 * @param	id
+		 * @return	Boolean: true if the transform was applied sucessfully
+		 */
+		public function setTransform(id:int, sndTransform:SoundTransform):Boolean {
+			if (valid(id)) {
+				channels[id].setTransform(sndTransform);
+				return true;
+			}
+			return false;
+		}
+		/**
+		 * getTransform
+		 * @param	id
+		 * @return	SoundTransform: the sound transfrom or null
+		 */
+		public function getTransform(id:int):SoundTransform {
+			if (valid(id)) {
+				return channels[id].getTransform();
+			}
+			return null;
+		}
+		/**
 		 * protected functions
 		**/
 		protected function valid(id:int):Boolean {
-			return id < Sounds.length && Sounds[id];
+			return id > -1 && id < Sounds.length && Sounds[id];
 		}
 		protected function increment(id:int):void {
 			++currentPlayingSounds;
@@ -246,5 +288,22 @@ internal class DataStore {
 		sChannel.dispatchEvent(new flash.events.Event(flash.events.Event.SOUND_COMPLETE));
 	}
 	public function dispatchEvent(...Void):void {
+	}
+	/**
+	 * Change soundTransform
+	 * @author  UnknownGuardian
+	 * @param   New soundTransform data to be applied
+	 * @return  Void
+	 * @update  15/6/2010(skyboy) also apply transform immediately instead of at next loop
+	 */
+	public function setTransform(t:flash.media.SoundTransform):void {
+		sChannel.soundTransform = sT = t;
+	}
+	/**
+	 * getTransform
+	 * @return SoundTransform: the current sound transform of the SoundChannel
+	 */
+	public function getTransform():flash.media.SoundTransform {
+		return sChannel.soundTransform;
 	}
 }
