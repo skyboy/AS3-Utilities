@@ -176,7 +176,7 @@
 		 * @return	Boolean: true if the sound was sucessfully stopped
 		 */
 		public function stopMusic(id:int):Boolean {
-			if (valid(id)) {
+			if (validC(id)) {
 				try {
 					channels[id].stop();
 					channels[id].dispatchEvent(new Event(Event.SOUND_COMPLETE));
@@ -190,24 +190,27 @@
 		/**
 		 * changeVolume
 		 * @author  UnknownGuardian
-		 * @param   id
+		 * @param   id: an ID returned by playMusic
 		 * @return  Boolean: true if the sound volume was succssfully changed
 		 * @update 15/6/2010(skyboy): added method, changed to use setTransform, and made it so other parts of the tasnform aren't changed
+		 * TODO: allow sound specific instead of channel specific
 		 */
 		public function changeVolume(id:int, volume:Number = 1):Boolean {
-			if (valid(id)) {
+			if (validC(id)) {
 				var sT:SoundTransform = getTransform(id);
 				sT.volume = volume; // let flash throw it's own error here
-				return setTransform(sT);
+				return setTransform(id, sT);
 			}
+			return false;
 		}
 		/**
 		 * setTransform
-		 * @param	id
+		 * @param	id: an ID returned by playMusic
 		 * @return	Boolean: true if the transform was applied sucessfully
+		 * TODO: allow sound specific instead of channel specific
 		 */
 		public function setTransform(id:int, sndTransform:SoundTransform):Boolean {
-			if (valid(id)) {
+			if (validC(id)) {
 				channels[id].setTransform(sndTransform);
 				return true;
 			}
@@ -215,11 +218,12 @@
 		}
 		/**
 		 * getTransform
-		 * @param	id
+		 * @param	id: an ID returned by playMusic
 		 * @return	SoundTransform: the sound transfrom or null
+		 * TODO: allow sound specific instead of channel specific
 		 */
 		public function getTransform(id:int):SoundTransform {
-			if (valid(id)) {
+			if (validC(id)) {
 				return channels[id].getTransform();
 			}
 			return null;
@@ -229,6 +233,9 @@
 		**/
 		protected function valid(id:int):Boolean {
 			return id > -1 && id < Sounds.length && Sounds[id];
+		}
+		protected function validC(id:int):Boolean {
+			return id > -1 && id < channels.length && channels[id];
 		}
 		protected function increment(id:int):void {
 			++currentPlayingSounds;
@@ -297,6 +304,7 @@ internal class DataStore {
 	 * @update  15/6/2010(skyboy) also apply transform immediately instead of at next loop
 	 */
 	public function setTransform(t:flash.media.SoundTransform):void {
+		if (!sChannel) return;
 		sChannel.soundTransform = sT = t;
 	}
 	/**
@@ -304,6 +312,7 @@ internal class DataStore {
 	 * @return SoundTransform: the current sound transform of the SoundChannel
 	 */
 	public function getTransform():flash.media.SoundTransform {
+		if (!sChannel) return null;
 		return sChannel.soundTransform;
 	}
 }
