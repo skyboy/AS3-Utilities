@@ -74,7 +74,7 @@
 		**/
 		protected var soundTypes:Vector.<int>, Sounds:Vector.<Sound>, soundNumber:int = 0, timeDelay:int = 50, channels:Vector.<DataStore>;
 		protected var currentPlayingSounds:int = 0, maxPlayableSounds:int = 16, maxPlayableOfType:int = 4, soundTimers:Vector.<Boolean>;
-		protected var soundLoops:Vector.<int>;
+		protected var soundLoops:Vector.<int>, Transforms:Vector.<SoundTransform>;
 		/**
 		 * public variables
 		**/
@@ -94,11 +94,12 @@
 			soundTypes = new Vector.<int>(maxSounds, true);
 			soundTimers = new Vector.<Boolean>(maxSounds, true);
 			Sounds = new Vector.<Sound>(maxSounds, true);
+			Transforms = new Vector.<SoundTransform>(maxSounds, true);
 			channels = new Vector.<DataStore>(maxPlayable, true);
 			soundLoops = new Vector.<int>(maxPlayable, true);
 			maxPlayableSounds = maxPlayable;
 			maxPlayableOfType = maxOfTypePlayable;
-			timeDelay = Math.abs(delayForPlays) + 1;
+			timeDelay = Math.min(Math.abs(delayForPlays) + 1, int.MAX_VALUE);
 		}
 		/**
 		 * public functions
@@ -108,8 +109,9 @@
 		 * @param	snd: the Sound object to add to the manager
 		 * @return	int: the ID representing the sound you just pushed into the manager
 		 */
-		public function addSound(snd:Sound):int {
+		public function addSound(snd:Sound, sndTransform:SoundTransform = null):int {
 			Sounds[soundNumber] = snd;
+			Transforms[soundNumber] = sndTransform;
 			soundTypes[soundNumber] = 0;
 			soundTimers[soundNumber] = true;
 			return soundNumber++;
@@ -135,6 +137,7 @@
 			if (valid(id)) {
 				if (canPlay(id)) {
 					increment(id);
+					sndTransform ||= Transforms[id];
 					var a:DataStore = new DataStore(Sounds[id], loops, sndTransform);
 					a.play(startTime);
 					callback ||= function(e:Event):void{ };
@@ -158,6 +161,7 @@
 			if (valid(id)) {
 				if (canPlay(id)) {
 					increment(id);
+					sndTransform ||= Transforms[id];
 					var a:DataStore = new DataStore(Sounds[id], loops, sndTransform);
 					a.play(startTime);
 					a.addEventListener(Event.SOUND_COMPLETE, function(e:Event, func:Function = null):void { e.target.removeEventListener(e.type, arguments.callee); soundEnded(e, id, a); } );
@@ -183,12 +187,49 @@
 			return false;
 		}
 		/**
+		 * changeSoundVolume
+		 * @param	id: an ID returned by playMusic or playSound
+		 * @param	volume: a number to set the volume to
+		 * @return	Boolean: true if the sound volume was succssfully changed
+		 */
+		public function changeSoundVolume(id:int, volume:Number = 1):Boolean {
+			if (valid(id)) {
+				var sT:SoundTransform = getSoundTransform(id);
+				sT.volume = volume;
+				return setSoundTransform(id, sT);
+			}
+			return false;
+		}
+		/**
+		 * setSoundTransform
+		 * @param	id: an ID returned by playMusic
+		 * @param	sndTransform: the transform to set
+		 * @return	Boolean: true if the transform was applied sucessfully
+		 */
+		public function setSoundTransform(id:int, sndTransform:SoundTransform):Boolean {
+			if (valid(id)) {
+				Transforms[id] = sndTransform;
+				return true;
+			}
+			return false;
+		}
+		/**
+		 * getSoundTransform
+		 * @param	id: an ID returned by playMusic
+		 * @return	SoundTransform: the sound transfrom or null
+		 */
+		public function getSoundTransform(id:int):SoundTransform {
+			if (valid(id)) {
+				return Transforms[id] || new SoundTransform(1, 0);
+			}
+			return null;
+		}
+		/**
 		 * changeVolume
-		 * @author  UnknownGuardian
-		 * @param   id: an ID returned by playMusic
-		 * @return  Boolean: true if the sound volume was succssfully changed
-		 * @update 15/6/2010(skyboy): added method, changed to use setTransform, and made it so other parts of the tasnform aren't changed
-		 * TODO: allow sound specific instead of channel specific
+		 * @author	UnknownGuardian
+		 * @param	id: an ID returned by playMusic or playSound
+		 * @return	Boolean: true if the sound volume was succssfully changed
+		 * @update	15/6/2010(skyboy): added method, changed to use setTransform, and made it so other parts of the tasnform aren't changed
 		 */
 		public function changeVolume(id:int, volume:Number = 1):Boolean {
 			if (validC(id)) {
@@ -201,8 +242,8 @@
 		/**
 		 * setTransform
 		 * @param	id: an ID returned by playMusic
+		 * @param	sndTransform: the transform to apply
 		 * @return	Boolean: true if the transform was applied sucessfully
-		 * TODO: allow sound specific instead of channel specific
 		 */
 		public function setTransform(id:int, sndTransform:SoundTransform):Boolean {
 			if (validC(id)) {
@@ -215,7 +256,6 @@
 		 * getTransform
 		 * @param	id: an ID returned by playMusic
 		 * @return	SoundTransform: the sound transfrom or null
-		 * TODO: allow sound specific instead of channel specific
 		 */
 		public function getTransform(id:int):SoundTransform {
 			if (validC(id)) {
