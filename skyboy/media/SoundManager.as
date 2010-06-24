@@ -177,13 +177,8 @@
 		 */
 		public function stopMusic(id:int):Boolean {
 			if (validC(id)) {
-				try {
-					channels[id].stop();
-					channels[id].dispatchEvent(new Event(Event.SOUND_COMPLETE));
-					return true;
-				}catch(e:*) {
-					trace("Error >>", e);
-				}
+				channels[id].stop();
+				return true;
 			}
 			return false;
 		}
