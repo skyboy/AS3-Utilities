@@ -116,7 +116,7 @@ package skyboy.text {
 		private static var i:int;
 		private static function handleString(data:String, e:int):String {
 			var rtn:Array = new Array(e - i - 1), inx:int = 0, t:int;
-			var iN:Boolean = false, c:int = 0, end:int = data.charCodeAt(i);
+			var iN:Boolean = false, c:int = 0, end:int = data.charCodeAt(i), p:int;
 			while (i != e) {
 				c = data.charCodeAt(++i);
 				if (iN) {
@@ -132,51 +132,78 @@ package skyboy.text {
 					case 0x74:
 						c = 9
 						break;
+					case 0x66:
+						c = 12;
+						break;
+					case 0x62:
+						c = 8;
+						break;
 					case 0x75:
-						c = data.charCodeAt(++i) - 0x30;
-						if (c > 9) {
-							c -= 7;
-							if ((c | 15) != 15) {
-								c -= 0x20;
+						p = data.charCodeAt(++i) - 0x30;
+						if (p > 9) {
+							p -= 7;
+							if ((p | 15) != 15) {
+								p -= 0x20;
 							}
 						}
-						if (c < 0 ||(c | 15) != 15) {
+						if (p < 0 ||(p | 15) != 15) {
 							throw new Error("Malformed JSON at char: " + i + ", " + data.charAt(i) + ".");
 						}
-						t = c << 4;
-						c = data.charCodeAt(++i) - 0x30;
-						if (c > 9) {
-							c -= 7;
-							if ((c | 15) != 15) {
-								c -= 0x20;
+						t = p << 4;
+					case 0x30:case 0x31:case 0x32:case 0x33:
+					case 0x34:case 0x35:case 0x36:case 0x37:
+						if (c == 0x75) {
+							p = data.charCodeAt(++i) - 0x30;
+						} else {
+							p = c - 0x30;
+							if (p > 7) {
+								throw new Error("Malformed JSON at char: " + i + ", " + data.charAt(i) + ".");
+							}
+							t = p << 4;
+							p = data.charCodeAt(++i) - 0x30;
+							if (p > 7) {
+								throw new Error("Malformed JSON at char: " + i + ", " + data.charAt(i) + ".");
+							}
+							t = (t | p) << 4;
+							p = data.charCodeAt(++i) - 0x30;
+							if (p > 7) {
+								throw new Error("Malformed JSON at char: " + i + ", " + data.charAt(i) + ".");
+							}
+							c = parseInt((t | p).toString(10), 8);
+							break;
+						}
+						if (p > 9) {
+							p -= 7;
+							if ((p | 15) != 15) {
+								p -= 0x20;
 							}
 						}
-						if (c < 0 || (c | 15) != 15) {
+						if (p < 0 || (p | 15) != 15) {
 							throw new Error("Malformed JSON at char: " + i + ", " + data.charAt(i) + ".");
 						}
-						t = (t | c) << 4;
+						t = (t | p) << 4;
 					case 0x78:
-						c = data.charCodeAt(++i) - 0x30;
-						if (c > 9) {
-							c -= 7;
-							if ((c | 15) != 15) {
-								c -= 0x20;
+						p = data.charCodeAt(++i) - 0x30;
+						if (p > 9) {
+							p -= 7;
+							if ((p | 15) != 15) {
+								p -= 0x20;
 							}
-						}if (c < 0 || (c | 15) != 15) {
+						}if (p < 0 || (p | 15) != 15) {
 							throw new Error("Malformed JSON at char: " + i + ", " + data.charAt(i) + ".");
 						}
-						t = (t | c) << 4;
-						c = data.charCodeAt(++i) - 0x30;
-						if (c > 9) {
-							c -= 7;
-							if ((c | 15) != 15) {
-								c -= 0x20;
+						t = (t | p) << 4;
+						p = data.charCodeAt(++i) - 0x30;
+						if (p > 9) {
+							p -= 7;
+							if ((p | 15) != 15) {
+								p -= 0x20;
 							}
 						}
-						if (c < 0 || (c | 15) != 15) {
+						if (p < 0 || (p | 15) != 15) {
 							throw new Error("Malformed JSON at char: " + i + ", " + data.charAt(i) + ".");
 						}
-						c = t | c;
+						c = t | p;
 						break;
 					}
 				} else if (c == 0x5c) {
@@ -187,7 +214,7 @@ package skyboy.text {
 				}
 				rtn[inx++] = c;
 			}
-			return inx?String.fromCharCode.apply(null, rtn):"";
+			return inx?String.fromCharCode.apply(null, rtn).substring(0,inx):"";
 		}
 		private static function handleNumber2(data:String, e:int):Number {
 			// TODO: parse with own code, throw error when not a number
