@@ -61,6 +61,15 @@
 	 * @author skyboy
 	 */
 	final public class PixelPerfect {
+		/**
+		 * @param	root: object to use as the root for testing
+		 * @param	tol: alpha tolerance used for testing
+		 */
+		public function PixelPerfect(root:DisplayObject = null, tol:int = 255) {
+			_root = root;
+			transformA = new ColorTransform(1, 0, 0, 1, 255, 0, 0, tol);
+			transformB = new ColorTransform(0, 1, 0, 1, 0, 255, 0, tol);
+		}
 		protected static var root:DisplayObjectContainer, cTransformA:ColorTransform = new ColorTransform(1, 0, 0, 1, 255, 0, 0, 255), cTransformB:ColorTransform = new ColorTransform(0, 1, 0, 1, 0, 255, 0, 255), _lastRect:Rectangle = null;
 		protected var _root:DisplayObjectContainer, transformA:ColorTransform = new ColorTransform(1, 0, 0, 1, 255, 0, 0, 255), transformB:ColorTransform = new ColorTransform(0, 1, 0, 1, 0, 255, 0, 255), lastRect:Rectangle = null;
 		/**
@@ -83,7 +92,7 @@
 			return _root = root;
 		}
 		/**
-		 * @param	tol: tolerance used for testing
+		 * @param	tol: alpha tolerance used for testing
 		 * @return	null
 		 */
 		public static function setAlphaTolerance(tol:int = 255):void {
@@ -113,7 +122,9 @@
 					b.lock();
 					b.draw(objA, aM, cTransformA);
 					b.draw(objB, bM, cTransformB, "add");
-					if ((_lastRect = b.getColorBoundsRect(0xffffffff, 0xffffff00, true)).width) {
+					_lastRect = b.getColorBoundsRect(0xffffffff, 0xffffff00, true);
+					b.dispose();
+					if (_lastRect.width) {
 						return true;
 					}
 				}
@@ -134,7 +145,9 @@
 					b.lock();
 					b.draw(objA, aM, transformA);
 					b.draw(objB, bM, transformB, "add");
-					if ((lastRect = b.getColorBoundsRect(0xffffffff, 0xffffff00, true)).width) {
+					lastRect = b.getColorBoundsRect(0xffffffff, 0xffffff00, true);
+					b.dispose();
+					if (lastRect.width) {
 						return true;
 					}
 				}
@@ -160,9 +173,10 @@
 					b.lock();
 					b.draw(objA, aM, cTransformA);
 					b.draw(objB, bM, cTransformB, "add");
-					var rect:Rectangle = _lastRect = b.getColorBoundsRect(0xffffffff, 0xffffff00, true);
-					if (rect.width) {
-						return rect;
+					_lastRect = b.getColorBoundsRect(0xffffffff, 0xffffff00, true);
+					b.dispose();
+					if (_lastRect.width) {
+						return _lastRect;
 					}
 				}
 			}
@@ -182,9 +196,10 @@
 					b.lock();
 					b.draw(objA, aM, transformA);
 					b.draw(objB, bM, transformB, "add");
-					var rect:Rectangle = lastRect = b.getColorBoundsRect(0xffffffff, 0xffffff00, true);
-					if (rect.width) {
-						return rect;
+					lastRect = b.getColorBoundsRect(0xffffffff, 0xffffff00, true);
+					b.dispose();
+					if (lastRect.width) {
+						return lastRect;
 					}
 				}
 			}
