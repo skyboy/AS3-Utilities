@@ -59,6 +59,11 @@ package skyboy.security {
 	import flash.utils.setTimeout;
 	
 	public class SiteLock extends Sprite {
+		/**
+		 * Creates a new instance of the SiteLock; it is recommended you only make one.
+		 * @param	navigateOnFail: navigate to a url when not on the right site?
+		 * @param	hideOnFail: hide the root parent if not on the right site?
+		 */
 		public function SiteLock(navigateOnFail:Boolean = true, hideOnFail:Boolean = false) {
 			hide = hideOnFail;
 			navigate = navigateOnFail;
@@ -108,6 +113,11 @@ package skyboy.security {
 				throw new Error("This SWF is hosted illegally.")
 			}
 		}
+		/**
+		 * Adds a site to the allowed list.
+		 * @param	url: the address to add
+		 * @param	exact: is this the exact site? if false, allows subdomains on this domain to serve the SWF
+		 */
 		public function addSite(url:String, exact:Boolean = true):void {
 			var a:String = url;
 			if (!siteToNav) {
@@ -120,17 +130,34 @@ package skyboy.security {
 			url = url.replace(/([.?\}\{\[\]\(\)\\\-*+$^|])/g, "\\$1");
 			sites.push(new RegExp((exact ? "^" : "^(.+\\.)*") + url + "$", "i"));
 		}
+		/**
+		 * Adds your own regular expression test to the list
+		 * @param	regexp: the RegExp to use
+		 */
 		public function allowRegExp(regexp:RegExp):void {
 			sites.push(regexp);
 		}
+		/**
+		 * Set the url to navigate to if it is to navigate when it fails
+		 * @param	url: the address to navigate to
+		 */
 		public function setNavigateURL(url:String):void {
 			if (url) {
 				siteToNav = new URLRequest(url);
 			}
 		}
+		/**
+		 * Allows or disallows the SWF to be played locally
+		 * @param	enabled: can the SWF be played locally?
+		 */
 		public function allowLocalPlay(enabled:Boolean = false):void {
 			local = enabled;
 		}
+		/**
+		 * Test if a certain URL works with the current list of allowed sites
+		 * @param	url: the address to test
+		 * @return	Boolean: true if the url will be allowed
+		 */
 		public function testIsAllowed(url:String):Boolean {
 			var match:RegExp = /^(?:https?:\/\/)?([^\/]+)/i
 			var site:String = url.match(match)[1];
