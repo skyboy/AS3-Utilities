@@ -54,32 +54,10 @@ package skyboy.text {
 		public function JSON() {
 			throw new Error("This class has no instance methods.")
 		}
-		private static function isSpace(i:int):Boolean {
-			return i == 0x20 || i == 0xA0 || i == 0x09 || i == 0x0B;
-		}
-		private static function isString(i:int):Boolean {
-			return i == 0x22 || i == 0x27;
-		}
-		private static function isObject(i:int):Boolean {
-			return i == 0x7B;
-		}
-		private static function isArray(i:int):Boolean {
-			return i == 0x5B;
-		}
-		private static function isNumber(i:int):Boolean {
-			return i == 0x2D || i == 0x2E || isNumeric(i) || i == 0x2B;
-		}
-		private static function isNumeric(i:int):Boolean {
-			return i > 0x2F && i < 0x3A;
-		}
-		private static function isLit(i:int):Boolean {
-			i |= 0x20;
-			return i == 0x74 || i == 0x66 || i == 0x6E;
-		}
-		private static function reset():void {
-			preObjs.length = i = 0;
-		}
+		private static var i:int;
+		private static const preArrs:Vector.<Array> = new Vector.<Array>();
 		private static const preObjs:Vector.<Object> = new Vector.<Object>();
+		private static const strArr:Array = new Array();
 		public static function decode(data:String):* {
 			if (data == null) {
 				return null;
@@ -91,6 +69,10 @@ package skyboy.text {
 			while (~(temp = data.indexOf("}", temp + 1))) ++objs;
 			preObjs.length = objs;
 			while (objs--) preObjs[objs] = new Object;
+			objs = temp = 0;
+			while (~(temp = data.indexOf("]", temp + 1))) ++objs;
+			temp = int(e / (preArrs.length = objs));
+			while (objs--) preArrs[objs] = new Array(temp);
 			while (i != e) {
 				c = data.charCodeAt(i);
 				switch(true) {
@@ -116,7 +98,32 @@ package skyboy.text {
 		public static function get index():int {
 			return i;
 		}
-		private static var i:int, strArr:Array = new Array();
+		
+		private static function reset():void {
+			preArrs.length = preObjs.length = i = 0;
+		}
+		private static function isSpace(i:int):Boolean {
+			return i == 0x20 || i == 0xA0 || i == 0x09 || i == 0x0B;
+		}
+		private static function isString(i:int):Boolean {
+			return i == 0x22 || i == 0x27;
+		}
+		private static function isObject(i:int):Boolean {
+			return i == 0x7B;
+		}
+		private static function isArray(i:int):Boolean {
+			return i == 0x5B;
+		}
+		private static function isNumber(i:int):Boolean {
+			return i == 0x2D || i == 0x2E || isNumeric(i) || i == 0x2B;
+		}
+		private static function isNumeric(i:int):Boolean {
+			return i > 0x2F && i < 0x3A;
+		}
+		private static function isLit(i:int):Boolean {
+			i |= 0x20;
+			return i == 0x74 || i == 0x66 || i == 0x6E;
+		}
 		private static function handleString(data:String, e:int):String {
 			var rtn:Array = strArr, inx:int, t:int, a:int = i;
 			var iN:Boolean = false, c:int, end:int = data.charCodeAt(i), p:int;
@@ -234,7 +241,7 @@ package skyboy.text {
 			if (isSpace(c)) {
 				do {
 					c = data.charCodeAt(++a);
-				} while (isSpace(c));
+				} while (isSpace(c) && i != e);
 			}
 			if (c == 0x2D) {
 				c = data.charCodeAt(++a);
@@ -326,7 +333,7 @@ package skyboy.text {
 					}
 				}
 			}
-			throw new Error("Malformed JSON at char: " + a + ", " + data.charAt(a) + ". Expected 0-9" + (p ? '' : "or ."));
+			throw new Error("Malformed JSON at char: " + a + ", " + data.charAt(a) + ". Expected 0-9" + (p ? '' : " or ."));
 		}
 		private static function handleLit(data:String, e:int):* {
 			var a:int = data.charCodeAt(i++) | 0x20, b:int = data.charCodeAt(i++) | 0x20;
@@ -362,37 +369,33 @@ package skyboy.text {
 			throw new Error ("Malformed JSON at char: " + (i -= 4) + ", " + data.charAt(i) + ". Expected literal value.");
 		}
 		private static function handleArray(data:String, e:int):Array {
-			var rtn:Array = new Array(int((e - i) / 2)), c:int, p:Boolean = true;
+			var rtn:Array = preArrs.pop(), c:int, p:Boolean = true;
 			var inx:int;
 			while (i != e) {
 				c = data.charCodeAt(++i);
 				if (isSpace(c)) {
 					do {
 						c = data.charCodeAt(++i);
-					} while (isSpace(c));
+					} while (isSpace(c) && i != e);
 				}
 				if (c == 0x5D) {
 					break;
 				} else if (p) {
 					if (isObject(c)) {
 						rtn[inx] = (handleObject(data, e));
-						p = false;
 					} else if (isArray(c)) {
 						rtn[inx] = (handleArray(data, e));
-						p = false;
 					} else if (isString(c)) {
 						rtn[inx] = (handleString(data, e));
-						p = false;
 					} else if (isNumber(c)) {
 						rtn[inx] = (handleNumber(data, e));
-						p = false;
 					} else if (isLit(c)) {
 						rtn[inx] = (handleLit(data, e));
-						p = false;
 					} else {
 						throw new Error ("Malformed JSON at char: " + i + ", " + data.charAt(i) + ".");
 					}
 					++inx;
+					p = false;
 				} else if (c == 0x2C) {
 					p = true;
 				} else {
@@ -422,33 +425,29 @@ package skyboy.text {
 					if (isSpace(c)) {
 						do {
 							c = data.charCodeAt(++i);
-						} while (isSpace(c));
+						} while (isSpace(c) && i != e);
 					}
 					if (c == 0x3A) {
 						c = data.charCodeAt(++i);
 						if (isSpace(c)) {
 							do {
 								c = data.charCodeAt(++i);
-							} while (isSpace(c));
+							} while (isSpace(c) && i != e);
 						}
 						if (isString(c)) {
 							rtn[inx] = handleString(data, e);
-							p = false;
 						} else if (isNumber(c)) {
 							rtn[inx] = handleNumber(data, e);
-							p = false;
 						} else if (isArray(c)) {
 							rtn[inx] = handleArray(data, e);
-							p = false;
 						} else  if (isLit(c)) {
 							rtn[inx] = handleLit(data, e);
-							p = false;
 						} else if (isObject(c)) {
 							rtn[inx] = handleObject(data, e);
-							p = false;
-						} else{
+						} else {
 							throw new Error ("Malformed JSON at char: " + i + ", " + data.charAt(i) + ".");
 						}
+						p = false;
 					} else {
 						throw new Error ("Malformed JSON at char: " + i + ", " + data.charAt(i) + ". Expected :");
 					}
