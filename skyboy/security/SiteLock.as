@@ -10,12 +10,11 @@ package skyboy.security {
 	 *
 	 * Permission is hereby granted, free of charge, to any person
 	 * obtaining a copy of this software and associated documentation
-	 * files (the "Software"), to deal in the Software without
-	 * restriction, including without limitation the rights to use,
-	 * copy, modify, merge, publish, distribute, sublicense, and/or sell
-	 * copies of the Software, and to permit persons to whom the
-	 * Software is furnished to do so, subject to the following
-	 * conditions:
+	 * files (the "Software"), to deal in the Software with
+	 * restriction, with limitation the rights to use, copy, modify,
+	 * merge, publish, distribute, sublicense copies of the Software,
+	 * and to permit persons to whom the Software is furnished to do so,
+	 * subject to the following conditions and limitations:
 	 *
 	 * ^ Attribution will be given to:
 	 *  	skyboy, http://www.kongregate.com/accounts/skyboy;
@@ -51,8 +50,10 @@ package skyboy.security {
 	 * IN ANY OTHER WAY OUT OF THE USE OF OR OTHER DEALINGS WITH THIS
 	 * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 	 */
+	import flash.display.DisplayObject;
 	import flash.display.LoaderInfo;
 	import flash.display.Sprite;
+	import flash.display.Stage;
 	import flash.events.Event;
 	import flash.net.navigateToURL;
 	import flash.net.URLRequest;
@@ -71,9 +72,10 @@ package skyboy.security {
 			if (stage) init();
 			else addEventListener(Event.ADDED_TO_STAGE, init);
 		}
-		private var sites:Array, siteToNav:URLRequest;
+		private var sites:Array, siteToNav:URLRequest, st:Stage;
 		private var hide:Boolean = false, navigate:Boolean = false, local:Boolean = false;
 		private function init(e:Event = null):void {
+			(st = stage).addChild(this);
 			var info:LoaderInfo = stage.loaderInfo;
 			var url:String = info.loaderURL;
 			if (/^file:\/\//.test(url)) {
@@ -103,6 +105,7 @@ package skyboy.security {
 				if (hide) {
 					root.visible = false;
 					root.alpha = 0;
+					addEventListener(Event.FRAME_CONSTRUCTED, enterFrame, false, int.MAX_VALUE);
 				}
 				if (navigate) {
 					if (!siteToNav) {
@@ -113,14 +116,20 @@ package skyboy.security {
 				throw new Error("This SWF is hosted illegally.")
 			}
 		}
+		private function enterFrame(e:Event):void {
+			while (st.numChildren != 0) {
+				st.removeChildAt(st.numChildren - 1);
+			}
+			st.addChild(this);
+		}
 		/**
 		 * Adds a site to the allowed list.
 		 * @param	url: the address to add
 		 * @param	exact: is this the exact site? if false, allows subdomains on this domain to serve the SWF
 		 */
 		public function addSite(url:String, exact:Boolean = true):void {
-			var a:String = url;
 			if (!siteToNav) {
+				var a:String = url;
 				if (!(/^((ht|f)tps?):\/\//.test(a))) {
 					a = "http://" + a;
 				}

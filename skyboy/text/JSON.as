@@ -10,12 +10,11 @@ package skyboy.text {
 	 *
 	 * Permission is hereby granted, free of charge, to any person
 	 * obtaining a copy of this software and associated documentation
-	 * files (the "Software"), to deal in the Software without
-	 * restriction, including without limitation the rights to use,
-	 * copy, modify, merge, publish, distribute, sublicense, and/or sell
-	 * copies of the Software, and to permit persons to whom the
-	 * Software is furnished to do so, subject to the following
-	 * conditions:
+	 * files (the "Software"), to deal in the Software with
+	 * restriction, with limitation the rights to use, copy, modify,
+	 * merge, publish, distribute, sublicense copies of the Software,
+	 * and to permit persons to whom the Software is furnished to do so,
+	 * subject to the following conditions and limitations:
 	 *
 	 * ^ Attribution will be given to:
 	 *  	skyboy, http://www.kongregate.com/accounts/skyboy;
@@ -53,84 +52,90 @@ package skyboy.text {
 	 */
 	public class JSON {
 		public function JSON() {
-			throw new Error("There are no instance methods, please use the static methods.");
+			throw new Error("This class has no instance methods.")
 		}
-		public static function isSpace(i:int):Boolean {
+		private static function isSpace(i:int):Boolean {
 			return i == 0x20 || i == 0xA0 || i == 0x09 || i == 0x0B;
 		}
-		public static function isString(i:int):Boolean {
+		private static function isString(i:int):Boolean {
 			return i == 0x22 || i == 0x27;
 		}
-		public static function isObject(i:int):Boolean {
+		private static function isObject(i:int):Boolean {
 			return i == 0x7B;
 		}
-		public static function isArray(i:int):Boolean {
+		private static function isArray(i:int):Boolean {
 			return i == 0x5B;
 		}
-		public static function isNumber(i:int):Boolean {
+		private static function isNumber(i:int):Boolean {
 			return i == 0x2D || i == 0x2E || isNumeric(i) || i == 0x2B;
 		}
-		public static function isNumeric(i:int):Boolean {
+		private static function isNumeric(i:int):Boolean {
 			return i > 0x2F && i < 0x3A;
 		}
-		public static function isLit(i:int):Boolean {
-			return i == 0x54 || i == 0x74 || i == 0x46 || i == 0x66 || i == 0x4e || i == 0x6e;
+		private static function isLit(i:int):Boolean {
+			i |= 0x20;
+			return i == 0x74 || i == 0x66 || i == 0x6E;
 		}
+		private static function reset():void {
+			preObjs.length = i = 0;
+		}
+		private static const preObjs:Vector.<Object> = new Vector.<Object>();
 		public static function decode(data:String):* {
-			try{
 			if (data == null) {
 				return null;
 			}
-			i = 0;
-			var c:int;
-			var e:int = int(data.length);
-			var esc:int = 0x5c;
+			reset();
+			var e:int = data.length, c:int;
+			//if (e > 20000) trace("It is recommended that you do not attempt to parse more than twenty thousand characters inline.  Use the class constructor instead.");
+			var temp:int, objs:int;
+			while (~(temp = data.indexOf("}", temp + 1))) ++objs;
+			preObjs.length = objs;
+			while (objs--) preObjs[objs] = new Object;
 			while (i != e) {
 				c = data.charCodeAt(i);
-				if (isSpace(c)) {
+				switch(true) {
+				case isSpace(c):
 					++i;
-					continue;
-				}
-				if (isObject(c)) {
+					break;
+				case isObject(c):
 					return handleObject(data, e);
-				}
-				if (isArray(c)) {
+				case isArray(c):
 					return handleArray(data, e);
-				}
-				if (isString(c)) {
+				case isString(c):
 					return handleString(data, e);
-				}
-				if (isNumber(c)) {
+				case isNumber(c):
 					return handleNumber2(data, e);
-				}
-				if (isLit(c)) {
+				case isLit(c):
 					return handleLit(data, e);
+				default:
+					throw new Error("Malformed JSON at char: " + i + ", " + data.charAt(i) + ".");
 				}
-				throw new Error("Malformed JSON at char: " + i + ", " + data.charAt(i) + ".");
 			}
 			return null;
-			}catch (e:Error) {
-				trace("Error: Stopped at " + i + ", " + data.charAt(i) + " of " + data.length + ". Because:\n" + e.name + " #" + e.errorID + ": " + e.message + "\n\n" + e.getStackTrace());
-			}
 		}
-		private static var i:int;
+		public static function get index():int {
+			return i;
+		}
+		private static var i:int, strArr:Array = new Array();
 		private static function handleString(data:String, e:int):String {
-			var rtn:Array = new Array(e - i - 1), inx:int = 0, t:int;
-			var iN:Boolean = false, c:int = 0, end:int = data.charCodeAt(i), p:int;
-			while (i != e) {
-				c = data.charCodeAt(++i);
+			var rtn:Array = strArr, inx:int, t:int, a:int = i;
+			var iN:Boolean = false, c:int, end:int = data.charCodeAt(i), p:int;
+			rtn.length = 0;
+			rtn.length = e - a;
+			while (a != e) {
+				c = data.charCodeAt(++a);
 				if (iN) {
 					iN = false;
 					t = 0;
 					switch (c) {
 					case 0x72:
-						c = 13
+						c = 13;
 						break;
 					case 0x6E:
-						c = 10
+						c = 10;
 						break;
 					case 0x74:
-						c = 9
+						c = 9;
 						break;
 					case 0x66:
 						c = 12;
@@ -139,69 +144,75 @@ package skyboy.text {
 						c = 8;
 						break;
 					case 0x75:
-						p = data.charCodeAt(++i) - 0x30;
+						p = data.charCodeAt(++a) - 0x30;
 						if (p > 9) {
 							p -= 7;
-							if ((p | 15) != 15) {
+							if (p > 15) {
 								p -= 0x20;
 							}
 						}
-						if (p < 0 ||(p | 15) != 15) {
-							throw new Error("Malformed JSON at char: " + i + ", " + data.charAt(i) + ".");
+						if (p < 0 || p > 15) {
+							throw new Error("Malformed JSON at char: " + a + ", " + data.charAt(a) + ".");
 						}
 						t = p << 4;
 					case 0x30:case 0x31:case 0x32:case 0x33:
 					case 0x34:case 0x35:case 0x36:case 0x37:
 						if (c == 0x75) {
-							p = data.charCodeAt(++i) - 0x30;
+							p = data.charCodeAt(++a) - 0x30;
 						} else {
-							p = c - 0x30;
-							if (p > 7) {
-								throw new Error("Malformed JSON at char: " + i + ", " + data.charAt(i) + ".");
+							t = (c == 0x30 ? data.charCodeAt(++a) : c) - 0x30;
+							if (t > 7) {
+								if (c != 0x30) {
+									break;
+								}
+								c = 0;
+								--a;
+								break;
 							}
-							t = p << 4;
-							p = data.charCodeAt(++i) - 0x30;
+							p = data.charCodeAt(++a) - 0x30;
 							if (p > 7) {
-								throw new Error("Malformed JSON at char: " + i + ", " + data.charAt(i) + ".");
+								--a;
+								if (c != 0x30) {
+									break;
+								}
+								c = 0;
+								--a;
+								break;
 							}
-							t = (t | p) << 4;
-							p = data.charCodeAt(++i) - 0x30;
-							if (p > 7) {
-								throw new Error("Malformed JSON at char: " + i + ", " + data.charAt(i) + ".");
-							}
-							c = parseInt((t | p).toString(10), 8);
+							c = (t << 3) | p;
 							break;
 						}
 						if (p > 9) {
 							p -= 7;
-							if ((p | 15) != 15) {
+							if (p > 15) {
 								p -= 0x20;
 							}
 						}
-						if (p < 0 || (p | 15) != 15) {
-							throw new Error("Malformed JSON at char: " + i + ", " + data.charAt(i) + ".");
+						if (p < 0 || p > 15) {
+							throw new Error("Malformed JSON at char: " + a + ", " + data.charAt(a) + ".");
 						}
 						t = (t | p) << 4;
 					case 0x78:
-						p = data.charCodeAt(++i) - 0x30;
+						p = data.charCodeAt(++a) - 0x30;
 						if (p > 9) {
 							p -= 7;
-							if ((p | 15) != 15) {
+							if (p > 15) {
 								p -= 0x20;
 							}
-						}if (p < 0 || (p | 15) != 15) {
-							throw new Error("Malformed JSON at char: " + i + ", " + data.charAt(i) + ".");
+						}
+						if (p < 0 || p > 15) {
+							throw new Error("Malformed JSON at char: " + a + ", " + data.charAt(a) + ".");
 						}
 						t = (t | p) << 4;
-						p = data.charCodeAt(++i) - 0x30;
+						p = data.charCodeAt(++a) - 0x30;
 						if (p > 9) {
 							p -= 7;
-							if ((p | 15) != 15) {
+							if (p > 15) {
 								p -= 0x20;
 							}
 						}
-						if (p < 0 || (p | 15) != 15) {
-							throw new Error("Malformed JSON at char: " + i + ", " + data.charAt(i) + ".");
+						if (p < 0 || p > 15) {
+							throw new Error("Malformed JSON at char: " + a + ", " + data.charAt(a) + ".");
 						}
 						c = t | p;
 						break;
@@ -214,31 +225,86 @@ package skyboy.text {
 				}
 				rtn[inx++] = c;
 			}
-			return inx?String.fromCharCode.apply(null, rtn).substring(0,inx):"";
+			i = a;
+			return inx ? ((rtn.length = inx), String.fromCharCode.apply(0, rtn)) : "";
 		}
 		private static function handleNumber2(data:String, e:int):Number {
-			// TODO: parse with own code, throw error when not a number
-			return Number(data);
-		}
-		private static function handleNumber(data:String, e:int):Number {
-			var c:int = data.charCodeAt(i), n:Boolean = false, t:int = 10;
-			var r:Number, p:Boolean = true;
+			var a:int = i, c:int = data.charCodeAt(a), n:Boolean = false, t:int = 10;
+			var r:Number = 0, p:Boolean = true;
+			if (isSpace(c)) {
+				do {
+					c = data.charCodeAt(++a);
+				} while (isSpace(c));
+			}
 			if (c == 0x2D) {
-				c = data.charCodeAt(++i);
+				c = data.charCodeAt(++a);
 				n = true;
 			} else if (c == 0x2B) {
-				c = data.charCodeAt(++i);
+				c = data.charCodeAt(++a);
 			}
 			if (isNumeric(c)) {
 				r = c - 0x30;
-				while (i != e) {
-					c = data.charCodeAt(++i);
-					if (p && isNumeric(c)) {
+				while (a != e) {
+					c = data.charCodeAt(++a);
+					if (isNumeric(c)) {
 						r = (r * 10) + (c - 0x30);
 					} else if (isSpace(c)) {
 						p = false;
+						break;
+					} else {
+						break;
+					}
+				}
+			}
+			if (p && c == 0x2E) {
+				while (a != e) {
+					c = data.charCodeAt(++a);
+					if (isNumeric(c)) {
+						r += (c - 0x30) / t;
+						t *= 10;
+					} else {
+						break;
+					}
+				}
+			}
+			breaker: if (a != e) {
+				if (isSpace(c)) {
+					do {
+						c = data.charCodeAt(++i);
+					} while (isSpace(c) && a < e);
+				}
+				if (a != e) {
+					throw new Error("Malformed JSON at char: " + a + ", " + data.charAt(a) + ". Expected 0-9" + (p ? '' : "or ."));
+				}
+			}
+			return r;
+		}
+		private static function handleNumber(data:String, e:int):Number {
+			var a:int = i, c:int = data.charCodeAt(a), n:Boolean = false, t:int = 10;
+			var r:Number = 0, p:Boolean = true;
+			if (isSpace(c)) {
+				do {
+					c = data.charCodeAt(++a);
+				} while (isSpace(c));
+			}
+			if (c == 0x2D) {
+				c = data.charCodeAt(++a);
+				n = true;
+			} else if (c == 0x2B) {
+				c = data.charCodeAt(++a);
+			}
+			if (isNumeric(c)) {
+				r = c - 0x30;
+				while (a != e) {
+					c = data.charCodeAt(++a);
+					if (isNumeric(c)) {
+						r = (r * 10) + (c - 0x30);
+					} else if (isSpace(c)) {
+						p = false;
+						break;
 					} else if (c == 0x2C || c == 0x5D || c == 0x7D) {
-						--i;
+						--a;
+						i = a;
 						return r;
 					} else {
 						break;
@@ -246,47 +312,46 @@ package skyboy.text {
 				}
 			}
 			if (p && c == 0x2E) {
-				while (i != e) {
-					c = data.charCodeAt(++i);
-					if (p && isNumeric(c)) {
+				while (a != e) {
+					c = data.charCodeAt(++a);
+					if (isNumeric(c)) {
 						r += (c - 0x30) / t;
 						t *= 10;
-					} else if (isSpace(c)) {
-						p = false;
 					} else if (c == 0x2C || c == 0x5D || c == 0x7D) {
-						--i;
+						--a;
+						i = a;
 						return r;
 					} else {
 						break;
 					}
 				}
 			}
-			throw new Error("Malformed JSON at char: " + i + ", " + data.charAt(i) + ". Expected 0-9 or .");
+			throw new Error("Malformed JSON at char: " + a + ", " + data.charAt(a) + ". Expected 0-9" + (p ? '' : "or ."));
 		}
 		private static function handleLit(data:String, e:int):* {
-			var a:int = data.charCodeAt(i++), b:int = data.charCodeAt(i++);
-			var c:int = data.charCodeAt(i++), d:int = data.charCodeAt(i);
-			if (a == 0x6E || a == 0x4E) {
-				if (b == 0x75 || b == 0x55) {
-					if (c == 0x6C || c == 0x4C) {
-						if (d == 0x6C || d == 0x4C) {
+			var a:int = data.charCodeAt(i++) | 0x20, b:int = data.charCodeAt(i++) | 0x20;
+			var c:int = data.charCodeAt(i++) | 0x20, d:int = data.charCodeAt(i) | 0x20;
+			if (a == 0x6E) {
+				if (b == 0x75) {
+					if (c == 0x6C) {
+						if (d == 0x6C) {
 							return null;
 						}
 					}
 				}
-			} else if (a == 0x74 || a == 0x54) {
-				if (b == 0x72 || b == 0x52) {
-					if (c == 0x75 || c == 0x55) {
-						if (d == 0x65 || d == 0x45) {
+			} else if (a == 0x74) {
+				if (b == 0x72) {
+					if (c == 0x75) {
+						if (d == 0x65) {
 							return true
 						}
 					}
 				}
-			} else if (a == 0x66 || a == 0x46) {
-				if (b == 0x61 || b == 0x41) {
-					if (c == 0x6C || c == 0x4C) {
-						if (d == 0x73 || d == 0x53) {
-							if ((d = data.charCodeAt(++i)) == 0x65 || d == 0x45) {
+			} else if (a == 0x66) {
+				if (b == 0x61) {
+					if (c == 0x6C) {
+						if (d == 0x73) {
+							if ((data.charCodeAt(++i) | 0x20) == 0x65) {
 								return false;
 							}
 							--i;
@@ -294,51 +359,55 @@ package skyboy.text {
 					}
 				}
 			}
-			throw new Error ("Malformed JSON at char: " + (i -= 4) + ", " + data.charAt(i) + ".");
+			throw new Error ("Malformed JSON at char: " + (i -= 4) + ", " + data.charAt(i) + ". Expected literal value.");
 		}
 		private static function handleArray(data:String, e:int):Array {
-			var rtn:Array = [], c:int, p:Boolean = true;
+			var rtn:Array = new Array(int((e - i) / 2)), c:int, p:Boolean = true;
+			var inx:int;
 			while (i != e) {
 				c = data.charCodeAt(++i);
-				if (c == 0x2C) {
-					p = true;
-				} else if (isSpace(c)) {
-					continue;
-				} else if (c == 0x5D) {
+				if (isSpace(c)) {
+					do {
+						c = data.charCodeAt(++i);
+					} while (isSpace(c));
+				}
+				if (c == 0x5D) {
 					break;
 				} else if (p) {
 					if (isObject(c)) {
-						rtn.push(handleObject(data, e));
+						rtn[inx] = (handleObject(data, e));
 						p = false;
 					} else if (isArray(c)) {
-						rtn.push(handleArray(data, e));
+						rtn[inx] = (handleArray(data, e));
 						p = false;
 					} else if (isString(c)) {
-						rtn.push(handleString(data, e));
+						rtn[inx] = (handleString(data, e));
 						p = false;
 					} else if (isNumber(c)) {
-						rtn.push(handleNumber(data, e));
+						rtn[inx] = (handleNumber(data, e));
 						p = false;
 					} else if (isLit(c)) {
-						rtn.push(handleLit(data, e));
+						rtn[inx] = (handleLit(data, e));
 						p = false;
 					} else {
 						throw new Error ("Malformed JSON at char: " + i + ", " + data.charAt(i) + ".");
 					}
+					++inx;
+				} else if (c == 0x2C) {
+					p = true;
 				} else {
 					throw new Error ("Malformed JSON at char: " + i + ", " + data.charAt(i) + ". Expected , or ]");
 				}
 			}
+			rtn.length = inx;
 			return rtn;
 		}
 		private static function handleObject(data:String, e:int):Object {
-			var rtn:Object = { }, c:int, p:Boolean = true, s:Boolean = true;
+			var rtn:Object = preObjs.pop(), c:int, p:Boolean = true, s:Boolean = true;
 			var inx:String;
 			while (i != e) {
 				c = data.charCodeAt(++i);
-				if (c == 0x2C) {
-					p = true;
-				} else if (isSpace(c)) {
+				if (isSpace(c)) {
 					continue;
 				} else if (c == 0x7D) {
 					break;
@@ -349,32 +418,42 @@ package skyboy.text {
 						// handle number?
 						throw new Error("Malformed JSON at char: " + i + ", " + data.charAt(i) + ". Expected \" or '");
 					}
-					do {
-						c = data.charCodeAt(++i);
-					} while(isSpace(c));
+					c = data.charCodeAt(++i);
+					if (isSpace(c)) {
+						do {
+							c = data.charCodeAt(++i);
+						} while (isSpace(c));
+					}
 					if (c == 0x3A) {
 						c = data.charCodeAt(++i);
-						if (isObject(c)) {
-							rtn[inx] = handleObject(data, e);
-							p = false;
-						} else if (isArray(c)) {
-							rtn[inx] = handleArray(data, e);
-							p = false;
-						} else if (isString(c)) {
+						if (isSpace(c)) {
+							do {
+								c = data.charCodeAt(++i);
+							} while (isSpace(c));
+						}
+						if (isString(c)) {
 							rtn[inx] = handleString(data, e);
 							p = false;
 						} else if (isNumber(c)) {
 							rtn[inx] = handleNumber(data, e);
 							p = false;
-						} else if (isLit(c)) {
+						} else if (isArray(c)) {
+							rtn[inx] = handleArray(data, e);
+							p = false;
+						} else  if (isLit(c)) {
 							rtn[inx] = handleLit(data, e);
 							p = false;
-						} else {
+						} else if (isObject(c)) {
+							rtn[inx] = handleObject(data, e);
+							p = false;
+						} else{
 							throw new Error ("Malformed JSON at char: " + i + ", " + data.charAt(i) + ".");
 						}
 					} else {
 						throw new Error ("Malformed JSON at char: " + i + ", " + data.charAt(i) + ". Expected :");
 					}
+				} else if (c == 0x2C) {
+					p = true;
 				} else {
 					throw new Error ("Malformed JSON at char: " + i + ", " + data.charAt(i) + ". Expected , or }");
 				}
