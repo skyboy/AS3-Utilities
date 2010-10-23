@@ -1,4 +1,5 @@
 package skyboy.text {
+	import flash.utils.Dictionary;
 	/**
 	 * JSON by skyboy. June 28th 2010.
 	 * Visit http://github.com/skyboy for documentation, updates
@@ -58,52 +59,71 @@ package skyboy.text {
 		private static const preArrs:Vector.<Array> = new Vector.<Array>();
 		private static const preObjs:Vector.<Object> = new Vector.<Object>();
 		private static const strArr:Array = new Array();
+		private static const qRepl:RegExp = /"/g;
 		public static function decode(data:String):* {
 			if (data == null) {
 				return null;
 			}
-			reset();
-			var e:int = data.length, c:int;
-			//if (e > 20000) trace("It is recommended that you do not attempt to parse more than twenty thousand characters inline.  Use the class constructor instead.");
+			var e:int = data.length;
+			if (e == 0) return null;
 			var temp:int, objs:int;
-			while (~(temp = data.indexOf("}", temp + 1))) ++objs;
+			while ((temp = data.indexOf("}", temp + 1)) !== -1) ++objs;
 			preObjs.length = objs;
-			while (objs--) preObjs[objs] = new Object;
+			while (objs-- > 0) preObjs[objs] = new Object;
 			objs = temp = 0;
-			while (~(temp = data.indexOf("]", temp + 1))) ++objs;
-			temp = int(e / (preArrs.length = objs));
-			while (objs--) preArrs[objs] = new Array(temp);
-			while (i != e) {
-				c = data.charCodeAt(i);
-				switch(true) {
-				case isSpace(c):
-					++i;
-					break;
-				case isObject(c):
-					return handleObject(data, e);
-				case isArray(c):
-					return handleArray(data, e);
-				case isString(c):
-					return handleString(data, e);
-				case isNumber(c):
-					return handleNumber2(data, e);
-				case isLit(c):
-					return handleLit(data, e);
-				default:
-					throw new Error("Malformed JSON at char: " + i + ", " + data.charAt(i) + ".");
-				}
+			while ((temp = data.indexOf("]", temp + 1)) !== -1) ++objs;
+			preArrs.length = objs;
+			while (objs-- > 0) preArrs[objs] = new Array(e);
+			var c:int = data.charCodeAt(i = 0);
+			if (isSpace(c)) {
+				do {
+					c = data.charCodeAt(++i);
+				} while (isSpace(c) && i != e);
 			}
-			return null;
+			if (isObject(c)) {
+				return handleObject(data, e);
+			} else if (isArray(c)) {
+				return handleArray(data, e);
+			} else if (isString(c)) {
+				return handleString(data, e);
+			} else if (isNumber(c)) {
+				return handleNumber2(data, e);
+			} else if (isLit(c)) {
+				return handleLit(data, e);
+			}
+			throw new Error("Malformed JSON at char: " + i + ", " + data.charAt(i) + ".");
+		}
+		public static function encode(data:*, advStringH:Boolean = true):String {
+			var ret:String = "";
+			if (data === null || data === undefined || data is Function) return "null";
+			if (data is Array || (data as Object).constructor.toString().indexOf("[class Vector.<") == 0) {
+				for each(var i:* in data) {
+					ret += encode(i) + ",";
+				}
+				return "[" + ret.substr(0, -1) + "]";
+			} else if (data is String) {
+				return '"' + (advStringH ? handleStringE(data) : data.replace(qRepl, '\\"')) + '"';
+			} else if (data is Number) {
+				if (data != data || data == Infinity || data == -Infinity) return "0";
+				return data.toString(10);
+			} else if (data is Boolean) {
+				return data.toString();
+			} else if (data is Object) {
+				for (var b:* in data) {
+					if (b is String) {
+						ret += '"' + (advStringH ? handleStringE(b) : b.replace(qRepl, '\\"')) + '":' + encode(data[b]) + ",";
+					}
+				}
+				return "{" + ret.substr(0, -1) + "}";
+			}
+			return "null";
 		}
 		public static function get index():int {
 			return i;
 		}
 		
-		private static function reset():void {
-			preArrs.length = preObjs.length = i = 0;
-		}
 		private static function isSpace(i:int):Boolean {
-			return i == 0x20 || i == 0xA0 || i == 0x09 || i == 0x0B;
+			return i == 0x20 || i == 0x09;
 		}
 		private static function isString(i:int):Boolean {
 			return i == 0x22 || i == 0x27;
@@ -115,7 +135,7 @@ package skyboy.text {
 			return i == 0x5B;
 		}
 		private static function isNumber(i:int):Boolean {
-			return i == 0x2D || i == 0x2E || isNumeric(i) || i == 0x2B;
+			return i == 0x2D || i == 0x2E || (i > 0x2F && i < 0x3A) || i == 0x2B;
 		}
 		private static function isNumeric(i:int):Boolean {
 			return i > 0x2F && i < 0x3A;
@@ -124,15 +144,50 @@ package skyboy.text {
 			i |= 0x20;
 			return i == 0x74 || i == 0x66 || i == 0x6E;
 		}
+		private static function min(a:Number, b:Number):Number {
+			return a < b ? a : b;
+		}
+		private static function handleStringE(data:String):String {
+			var rtn:Array = strArr, inx:int, c:int, i:int;
+			var e:int = data.length, t:int;
+			if (e == 0) return "";
+			rtn.length = min(e * 5, String.length);
+			while (i != e) {
+				c = data.charCodeAt(i++);
+				if (c < 32 || c > 127) {
+					if (c > 0xFFFF) c = 0xFFFF;
+					rtn[inx++] = 0x5C;
+					rtn[inx++] = 0x75;
+					t = ((c & 0xF000) >> 12) + 0x30;
+					if (t > 0x39) t += 7;
+					rtn[inx++] = t;
+					t = ((c & 0xF00) >> 8) + 0x30;
+					if (t > 0x39) t += 7;
+					rtn[inx++] = t;
+					t = ((c & 0xF0) >> 4) + 0x30;
+					if (t > 0x39) t += 7;
+					rtn[inx++] = t;
+					t = (c & 15) + 0x30;
+					if (t > 0x39) t += 7;
+					rtn[inx++] = t;
+					continue;
+				} else if (c == 0x22) {
+					rtn[inx++] = 0x5C;
+					rtn[inx++] = 0x22;
+					continue;
+				}
+				rtn[inx++] = c;
+			}
+			return ((rtn.length = inx), String.fromCharCode.apply(0, rtn));
+		}
 		private static function handleString(data:String, e:int):String {
 			var rtn:Array = strArr, inx:int, t:int, a:int = i;
-			var iN:Boolean = false, c:int, end:int = data.charCodeAt(i), p:int;
-			rtn.length = 0;
-			rtn.length = e - a;
+			var iN:Boolean, c:int, end:int = data.charCodeAt(i), p:int;
+			rtn.length = e;
 			while (a != e) {
 				c = data.charCodeAt(++a);
-				if (iN) {
-					iN = false;
+				if (c == 0x5C) {
+					c = data.charCodeAt(++a);
 					t = 0;
 					switch (c) {
 					case 0x72:
@@ -159,7 +214,7 @@ package skyboy.text {
 							}
 						}
 						if (p < 0 || p > 15) {
-							throw new Error("Malformed JSON at char: " + a + ", " + data.charAt(a) + ".");
+							throw new Error("Malformed JSON at char: " + a + ", " + data.charAt(a) + ". Expected 0-F");
 						}
 						t = p << 4;
 					case 0x30:case 0x31:case 0x32:case 0x33:
@@ -196,7 +251,7 @@ package skyboy.text {
 							}
 						}
 						if (p < 0 || p > 15) {
-							throw new Error("Malformed JSON at char: " + a + ", " + data.charAt(a) + ".");
+							throw new Error("Malformed JSON at char: " + a + ", " + data.charAt(a) + ". Expected 0-F");
 						}
 						t = (t | p) << 4;
 					case 0x78:
@@ -208,7 +263,7 @@ package skyboy.text {
 							}
 						}
 						if (p < 0 || p > 15) {
-							throw new Error("Malformed JSON at char: " + a + ", " + data.charAt(a) + ".");
+							throw new Error("Malformed JSON at char: " + a + ", " + data.charAt(a) + ". Expected 0-F");
 						}
 						t = (t | p) << 4;
 						p = data.charCodeAt(++a) - 0x30;
@@ -219,13 +274,12 @@ package skyboy.text {
 							}
 						}
 						if (p < 0 || p > 15) {
-							throw new Error("Malformed JSON at char: " + a + ", " + data.charAt(a) + ".");
+							throw new Error("Malformed JSON at char: " + a + ", " + data.charAt(a) + ". Expected 0-F");
 						}
 						c = t | p;
 						break;
 					}
-				} else if (c == 0x5c) {
-					iN = true;
+					rtn[inx++] = c;
 					continue;
 				} else if (c == end) {
 					break;
@@ -236,8 +290,8 @@ package skyboy.text {
 			return inx ? ((rtn.length = inx), String.fromCharCode.apply(0, rtn)) : "";
 		}
 		private static function handleNumber2(data:String, e:int):Number {
-			var a:int = i, c:int = data.charCodeAt(a), n:Boolean = false, t:int = 10;
-			var r:Number = 0, p:Boolean = true;
+			var a:int = i, c:int = data.charCodeAt(a), n:Boolean, t:int = 1;
+			var r:Number = 0;
 			if (isSpace(c)) {
 				do {
 					c = data.charCodeAt(++a);
@@ -255,40 +309,32 @@ package skyboy.text {
 					c = data.charCodeAt(++a);
 					if (isNumeric(c)) {
 						r = (r * 10) + (c - 0x30);
-					} else if (isSpace(c)) {
-						p = false;
-						break;
-					} else {
-						break;
 					}
 				}
 			}
-			if (p && c == 0x2E) {
+			if (c == 0x2E) {
 				while (a != e) {
 					c = data.charCodeAt(++a);
 					if (isNumeric(c)) {
-						r += (c - 0x30) / t;
-						t *= 10;
-					} else {
-						break;
+						r += (c - 0x30) / (t *= 10);
 					}
 				}
 			}
-			breaker: if (a != e) {
+			if (a != e) {
 				if (isSpace(c)) {
 					do {
 						c = data.charCodeAt(++i);
 					} while (isSpace(c) && a < e);
 				}
 				if (a != e) {
-					throw new Error("Malformed JSON at char: " + a + ", " + data.charAt(a) + ". Expected 0-9" + (p ? '' : "or ."));
+					throw new Error("Malformed JSON at char: " + a + ", " + data.charAt(a) + ". Expected 0-9 or .");
 				}
 			}
-			return r;
+			return n ? r * -1.0 : r;
 		}
 		private static function handleNumber(data:String, e:int):Number {
-			var a:int = i, c:int = data.charCodeAt(a), n:Boolean = false, t:int = 10;
-			var r:Number = 0, p:Boolean = true;
+			var a:int = i, c:int = data.charCodeAt(a), n:Boolean, t:int = 1;
+			var r:Number = 0;
 			if (isSpace(c)) {
 				do {
 					c = data.charCodeAt(++a);
@@ -306,34 +352,28 @@ package skyboy.text {
 					c = data.charCodeAt(++a);
 					if (isNumeric(c)) {
 						r = (r * 10) + (c - 0x30);
-					} else if (isSpace(c)) {
-						p = false;
-						break;
-					} else if (c == 0x2C || c == 0x5D || c == 0x7D) {
-						--a;
-						i = a;
-						return r;
-					} else {
-						break;
+						continue;
+					} else if (isSpace(c) || c == 0x2C || c == 0x5D || c == 0x7D) {
+						i = a - 1;
+						return n ? r * -1.0 : r;
 					}
+					break;
 				}
 			}
-			if (p && c == 0x2E) {
+			if (c == 0x2E) {
 				while (a != e) {
 					c = data.charCodeAt(++a);
 					if (isNumeric(c)) {
-						r += (c - 0x30) / t;
-						t *= 10;
-					} else if (c == 0x2C || c == 0x5D || c == 0x7D) {
-						--a;
-						i = a;
-						return r;
-					} else {
-						break;
+						r += (c - 0x30) / (t *= 10);
+						continue;
+					} else if (isSpace(c) || c == 0x2C || c == 0x5D || c == 0x7D) {
+						i = a - 1;
+						return n ? r * -1.0 : r;
 					}
+					break;
 				}
 			}
-			throw new Error("Malformed JSON at char: " + a + ", " + data.charAt(a) + ". Expected 0-9" + (p ? '' : " or ."));
+			throw new Error("Malformed JSON at char: " + a + ", " + data.charAt(a) + ". Expected 0-9 or .");
 		}
 		private static function handleLit(data:String, e:int):* {
 			var a:int = data.charCodeAt(i++) | 0x20, b:int = data.charCodeAt(i++) | 0x20;
@@ -366,7 +406,7 @@ package skyboy.text {
 					}
 				}
 			}
-			throw new Error ("Malformed JSON at char: " + (i -= 4) + ", " + data.charAt(i) + ". Expected literal value.");
+			throw new Error ("Malformed JSON at char: " + (i -= 4) + ", " + data.charAt(i) + ". Expected true, false or null.");
 		}
 		private static function handleArray(data:String, e:int):Array {
 			var rtn:Array = preArrs.pop(), c:int, p:Boolean = true;
@@ -374,39 +414,39 @@ package skyboy.text {
 			while (i != e) {
 				c = data.charCodeAt(++i);
 				if (isSpace(c)) {
-					do {
-						c = data.charCodeAt(++i);
-					} while (isSpace(c) && i != e);
-				}
-				if (c == 0x5D) {
+					continue;
+				} else if (c == 0x5D) {
 					break;
 				} else if (p) {
-					if (isObject(c)) {
-						rtn[inx] = (handleObject(data, e));
-					} else if (isArray(c)) {
-						rtn[inx] = (handleArray(data, e));
-					} else if (isString(c)) {
-						rtn[inx] = (handleString(data, e));
-					} else if (isNumber(c)) {
-						rtn[inx] = (handleNumber(data, e));
-					} else if (isLit(c)) {
-						rtn[inx] = (handleLit(data, e));
-					} else {
-						throw new Error ("Malformed JSON at char: " + i + ", " + data.charAt(i) + ".");
-					}
-					++inx;
 					p = false;
+					if (isObject(c)) {
+						rtn[inx++] = handleObject(data, e);
+						continue;
+					} else if (isArray(c)) {
+						rtn[inx++] = handleArray(data, e);
+						continue;
+					} else if (isString(c)) {
+						rtn[inx++] = handleString(data, e);
+						continue;
+					} else if (isNumber(c)) {
+						rtn[inx++] = handleNumber(data, e);
+						continue;
+					} else if (isLit(c)) {
+						rtn[inx++] = handleLit(data, e);
+						continue;
+					}
+					throw new Error ("Malformed JSON at char: " + i + ", " + data.charAt(i) + ".");
 				} else if (c == 0x2C) {
 					p = true;
-				} else {
-					throw new Error ("Malformed JSON at char: " + i + ", " + data.charAt(i) + ". Expected , or ]");
+					continue;
 				}
+				throw new Error ("Malformed JSON at char: " + i + ", " + data.charAt(i) + ". Expected , or ]");
 			}
 			rtn.length = inx;
 			return rtn;
 		}
 		private static function handleObject(data:String, e:int):Object {
-			var rtn:Object = preObjs.pop(), c:int, p:Boolean = true, s:Boolean = true;
+			var rtn:Object = preObjs.pop(), c:int, p:Boolean = true;
 			var inx:String;
 			while (i != e) {
 				c = data.charCodeAt(++i);
@@ -415,6 +455,7 @@ package skyboy.text {
 				} else if (c == 0x7D) {
 					break;
 				} else if (p) {
+					p = false;
 					if (isString(c)) {
 						inx = handleString(data, e);
 					} else {
@@ -436,26 +477,28 @@ package skyboy.text {
 						}
 						if (isString(c)) {
 							rtn[inx] = handleString(data, e);
+							continue;
 						} else if (isNumber(c)) {
 							rtn[inx] = handleNumber(data, e);
+							continue;
 						} else if (isArray(c)) {
 							rtn[inx] = handleArray(data, e);
+							continue;
 						} else  if (isLit(c)) {
 							rtn[inx] = handleLit(data, e);
+							continue;
 						} else if (isObject(c)) {
 							rtn[inx] = handleObject(data, e);
-						} else {
-							throw new Error ("Malformed JSON at char: " + i + ", " + data.charAt(i) + ".");
+							continue;
 						}
-						p = false;
-					} else {
-						throw new Error ("Malformed JSON at char: " + i + ", " + data.charAt(i) + ". Expected :");
+						throw new Error ("Malformed JSON at char: " + i + ", " + data.charAt(i) + ".");
 					}
+					throw new Error ("Malformed JSON at char: " + i + ", " + data.charAt(i) + ". Expected :");
 				} else if (c == 0x2C) {
 					p = true;
-				} else {
-					throw new Error ("Malformed JSON at char: " + i + ", " + data.charAt(i) + ". Expected , or }");
+					continue;
 				}
+				throw new Error ("Malformed JSON at char: " + i + ", " + data.charAt(i) + ". Expected , or }");
 			}
 			return rtn;
 		}
