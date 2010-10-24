@@ -64,7 +64,7 @@
 		 * @param	root: object to use as the root for testing
 		 * @param	tol: alpha tolerance used for testing
 		 */
-		public function PixelPerfect(root:DisplayObject = null, tol:int = 255) {
+		public function PixelPerfect(root:DisplayObjectContainer = null, tol:int = 255) {
 			_root = root;
 			transformA = new ColorTransform(1, 0, 0, 1, 255, 0, 0, tol);
 			transformB = new ColorTransform(0, 1, 0, 1, 0, 255, 0, tol);
