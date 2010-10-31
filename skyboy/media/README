@@ -1,10 +1,22 @@
 using SoundManager:
 	import SoundManager into your project
 	create a new instance:
-		soundManager = new SoundManager(maxSounds, maxPlayable, maxOfTypePlayable, delayForPlays)
+		soundManager = new SoundManager();
 	add sounds:
 		var snd:Sound = new Sound();
 		snd.load("your/sound.mp3");
 		backgroundMusic = soundManager.addSound(snd);
-	play sounds:
-		playingMusic = soundManager.playMusic(backgroundMusic)
+		snd = new ShootSound();
+		shootSound = soundManager.addSound(snd);
+	play music:
+		playingMusic = soundManager.playMusic(backgroundMusic);
+	pause music:
+		soundManager.pause(playingMusic);
+	unpause music:
+		soundManager.unpause(playingMusic);
+	stop music:
+		soundManager.stopMusic(playingMusic);
+	play sound:
+		soundManager.playSound(shootSound);
+	stop all music and sounds:
+		soundManager.stopAll();
