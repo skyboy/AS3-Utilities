@@ -82,6 +82,17 @@ package skyboy.security {
 				if (local) {
 					return;
 				}
+				if (hide) {
+					root.visible = false;
+					root.alpha = 0;
+					addEventListener(Event.FRAME_CONSTRUCTED, enterFrame, false, int.MAX_VALUE);
+				}
+				if (navigate) {
+					if (!siteToNav) {
+						siteToNav = new URLRequest("http://www.kongregate.com/");
+					}
+					setTimeout(navigateToURL, 0, siteToNav, "_top");
+				}
 				throw new Error("You are not allowed to play this SWF locally.");
 			}
 			var match:RegExp = /^(?:https?:\/\/)?([^\/]+)/i
@@ -118,7 +129,7 @@ package skyboy.security {
 		}
 		private function enterFrame(e:Event):void {
 			while (st.numChildren != 0) {
-				st.removeChildAt(st.numChildren - 1);
+				st.removeChildAt(0);
 			}
 			st.addChild(this);
 		}
@@ -138,6 +149,16 @@ package skyboy.security {
 			url = url.replace(/^(?:(?:ht|f)tps?:\/\/)??([^\/]+)/i, '$1').toLowerCase();
 			url = url.replace(/([.?\}\{\[\]\(\)\\\-*+$^|])/g, "\\$1");
 			sites.push(new RegExp((exact ? "^" : "^(.+\\.)*") + url + "$", "i"));
+		}
+		/**
+		 * Adds multiple sites to the allowed list.
+		 * @param	exact: is this the exact site? if false, allows subdomains on this domain to serve the SWF
+		 * @param	...sites: the sitess to allow.
+		 */
+		public function addSites(exact:Boolean = true, ...sites):void {
+			for each(var i:* in sites) {
+				if (i is String) addSite(i, exact);
+			}
 		}
 		/**
 		 * Adds your own regular expression test to the list

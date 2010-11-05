@@ -1,4 +1,5 @@
 package skyboy.text {
+	import flash.utils.getQualifiedClassName;
 	/**
 	 * JSON by skyboy. June 28th 2010.
 	 * Visit http://github.com/skyboy for documentation, updates
@@ -58,11 +59,12 @@ package skyboy.text {
 		private static const preArrs:Vector.<Array> = new Vector.<Array>();
 		private static const preObjs:Vector.<Object> = new Vector.<Object>();
 		private static const strArr:Array = new Array();
-		private static const qRepl:RegExp = /"/g;
+		private static const qRepl:RegExp = /"|\\/g;
 		public static function decode(data:String):* {
 			if (data == null) {
 				return null;
 			}
+			data = data.valueOf();
 			var temp:int, objs:int;
 			var e:int = data.length;
 			if (e == 0) return null;
@@ -95,22 +97,24 @@ package skyboy.text {
 		public static function encode(data:*, advStringH:Boolean = true):String {
 			var ret:String = "";
 			if (data === null || data === undefined || data is Function) return "null";
-			if (data is Array || data.constructor.toString().indexOf("[class Vector.<") == 0) {
-				for each(var i:* in data) {
-					ret += encode(i) + ",";
-				}
-				return "[" + ret.substr(0, -1) + "]";
-			} else if (data is String) {
-				return '"' + (advStringH ? handleStringE(data) : data.replace(qRepl, '\\"')) + '"';
+			if (data is String) {
+				return '"' + (advStringH ? handleStringE(data) : data.replace(qRepl, '\\$&')) + '"';
 			} else if (data is Number) {
 				if (data != data || data == Infinity || data == -Infinity) return "0";
 				return data.toString(10);
 			} else if (data is Boolean) {
 				return data.toString();
+			} else if (data is Date) {
+				return data.getTime();
+			} else if (data is Array || getQualifiedClassName(data).indexOf("AS3.vec:") === 0) {
+				for each(var i:* in data) {
+					ret += encode(i) + ",";
+				}
+				return "[" + ret.substr(0, -1) + "]";
 			} else if (data is Object) {
 				for (var b:* in data) {
-					if (b is String) {
-						ret += '"' + (advStringH ? handleStringE(b) : b.replace(qRepl, '\\"')) + '":' + encode(data[b]) + ",";
+					if (b is String || b is Number) {
+						ret += '"' + (advStringH ? handleStringE(b) : b.replace(qRepl, '\\$&')) + '":' + encode(data[b]) + ",";
 					}
 				}
 				return "{" + ret.substr(0, -1) + "}";

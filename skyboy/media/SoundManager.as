@@ -152,10 +152,10 @@
 		public function deleteSound(type:int, stopPlayingAll:Boolean = false):Boolean {
 			if (valid(type)) {
 				if (stopPlayingAll) stopAll(type);
-				Sounds[b] = null;
-				Transforms[b] = null;
-				soundTypes[b] = 0;
-				soundTimers[b] = false;
+				Sounds[type] = null;
+				Transforms[type] = null;
+				soundTypes[type] = 0;
+				soundTimers[type] = false;
 				return true;
 			}
 			return false;
@@ -399,7 +399,9 @@
 			--currentPlayingSounds;
 		}
 		protected function min(x:int):int {
-			x = (x ^ x >> 31) + (x >>> 31);
+			if (x < 0) {
+				x = -x;
+			}
 			return x < 2147483647 ? x : 2147483647;
 		}
 		/**

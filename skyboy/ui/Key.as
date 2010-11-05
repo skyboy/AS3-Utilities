@@ -225,19 +225,21 @@ package skyboy.ui {
 		public static function areDown(code1:int, code2:int, ...codes):Boolean {
 			if (code1 < 0 || code1 > 1048575 || code2 < 0 || code2 > 1048575) return false;
 			var ret:Boolean = Keys[code1] && Keys[code2];
-			for each (var code:int in codes) {
-				if (code < 0 || code > 1048575) return false;
-				if (!(ret = ret && Keys[code])) return false;
+			if (ret) {
+				for each (var code:int in codes) {
+					if (code < 0 || code > 1048575) return false;
+					if (!(ret = ret && Keys[code])) return false;
+				}
 			}
 			return ret;
 		}
 		/**
-		 * areDownO
+		 * anyDown
 		 * @param	int: code1		First keyCode to check if it is down.
 		 * @param	int: ...codes	Other keyCodes to check if they are down.
 		 * @return	Boolean:		true if at least one of the keys is down, false if none are.
 		 */
-		public static function areDownO(code1:int, ...codes):Boolean {
+		public static function anyDown(code1:int, ...codes):Boolean {
 			if (code1 >= 0 && code1 <= 1048575) {
 				if (Keys[code1]) return true;
 			}
