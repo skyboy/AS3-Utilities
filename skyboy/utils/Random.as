@@ -29,7 +29,7 @@ package skyboy.utils {
 			y ^= y >>> 11;
 			y ^= (y << 7) & 2636928640;
 			y ^= (y << 15) & 4022730752;
-			return uint(y ^ y >>> 18) / (uint.MAX_VALUE + Number.MIN_VALUE);
+			return uint(y ^ (y >>> 18)) / (uint.MAX_VALUE + Number.MIN_VALUE);
 		}
 		/**
 		 * extractNumber2
@@ -42,7 +42,7 @@ package skyboy.utils {
 			y ^= y >>> 11;
 			y ^= (y << 7) & 2636928640;
 			y ^= (y << 15) & 4022730752;
-			return (y ^ y >>> 18) / (int.MAX_VALUE + Number.MIN_VALUE);
+			return (y ^ (y >>> 18)) / (int.MAX_VALUE + Number.MIN_VALUE);
 		}
 		/**
 		 * extractNumber3
@@ -55,7 +55,7 @@ package skyboy.utils {
 			y ^= y >>> 11;
 			y ^= (y << 7) & 2636928640;
 			y ^= (y << 15) & 4022730752;
-			return (y ^ y >>> 18) / (uint.MAX_VALUE + Number.MIN_VALUE);
+			return (y ^ (y >>> 18)) / (uint.MAX_VALUE + Number.MIN_VALUE);
 		}
 		/**
 		 * extractUint
@@ -68,7 +68,7 @@ package skyboy.utils {
 			y ^= y >>> 11;
 			y ^= (y << 7) & 2636928640;
 			y ^= (y << 15) & 4022730752;
-			return (y ^ y >>> 18);
+			return (y ^ (y >>> 18));
 		}
 		/**
 		 * extractInt
@@ -81,7 +81,7 @@ package skyboy.utils {
 			y ^= y >>> 11;
 			y ^= (y << 7) & 2636928640;
 			y ^= (y << 15) & 4022730752;
-			return (y ^ y >>> 18);
+			return (y ^ (y >>> 18));
 		}
 		private function generateNumbers():void {
 			var i:int, y:int;
