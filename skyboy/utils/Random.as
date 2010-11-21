@@ -10,12 +10,27 @@ package skyboy.utils {
 			return r.extractNumber();
 		}
 		private const MT:Vector.<int> = new Vector.<int>(624);
-		private var index:int;
+		private var index:int, _seed:int;
+		/**
+		 * Get the seed currently in use
+		 */
+		public function get seed():int {
+			return _seed;
+		}
+		/**
+		 * Set the seed currently in use (resets state)
+		 */
+		public function set seed(a:int):void {
+			if (a != _seed) {
+				var i:int, b:int = MT[index = 0] = _seed = seed;
+				while (++i < 624) b = (MT[i] = (1812433253 * b ^ ((b >>> 30) + i)) & 0xFFFFFFFF);
+			}
+		}
 		/**
 		 * @param	int: seed	The seed number to use, using the same seed will get you the same results each time
 		 */
 		public function Random(seed:int):void {
-			var i:int, b:int = MT[0] = seed;
+			var i:int, b:int = MT[0] = _seed = seed;
 			while (++i < 624) b = (MT[i] = (1812433253 * b ^ ((b >>> 30) + i)) & 0xFFFFFFFF);
 		}
 		/**
