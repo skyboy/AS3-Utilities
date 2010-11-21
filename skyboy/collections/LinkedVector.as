@@ -1,12 +1,12 @@
-package skyboy.managers {
+package skyboy.collections {
 	/**
-	*   A linked list, which is a single-dimensional chain of objects called
-	*   nodes. This implementation is doubly-linked, so each node has a link
-	*   to the next and previous node. It's API is designed to mimic that of
-	*   the top-level Array class.
-	*   @author Jackson Dunstan
-	*   @author skyboy
-	*/
+	 *   A linked list, which is a single-dimensional chain of objects called
+	 *   nodes. This implementation is doubly-linked, so each node has a link
+	 *   to the next and previous node. It's API is designed to mimic that of
+	 *   the top-level Array class.
+	 *   @author Jackson Dunstan
+	 *   @author skyboy
+	 */
 	public class LinkedVector {
 		public var head:LinkedVectorNode;
 		public var tail:LinkedVectorNode;
@@ -51,10 +51,10 @@ package skyboy.managers {
 		}
 
 		/**
-		*   Equivalent to the Array [] operator
-		*   @param index Index of the element to get
-		*   @return The element at the given index
-		*/
+		 *   Equivalent to the Array [] operator
+		 *   @param index Index of the element to get
+		 *   @return The element at the given index
+		 */
 		public function elementAt(index:int):Object {
 			if (index < 0) {
 				throw new TypeError("Error #2007");
