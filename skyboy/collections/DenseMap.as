@@ -1151,7 +1151,7 @@ package skyboy.collections {
 					if ((l = (c = a.toArray(hArray)).length)) do {
 						push(c[b++]);
 					} while(b < l);
-				} else if (a is Array || getQualifiedClassName(data).indexOf("AS3.vec:") === 0) {
+				} else if (a is Array || getQualifiedClassName(a).indexOf("AS3.vec:") === 0) {
 					if ((l = (c = a as Array).length)) do {
 						push(c[b++]);
 					} while (b < l);
@@ -1340,7 +1340,7 @@ package skyboy.collections {
 		}
 		public function splice(start:uint, count:uint, ...values):DenseMap {
 			// TODO: create splice function
-			return;
+			return this;
 			if (start >= _length) { if (start == _length) concatArray(values); return null; };
 			var i:uint, end:uint, l:uint = values.length;
 			if (count) {
