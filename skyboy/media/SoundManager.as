@@ -184,9 +184,9 @@
 					sndTransform ||= Transforms[type];
 					var b:int = channels.indexOf(null);
 					var a:DataStore = channels[b] = new DataStore(Sounds[type], b, loops, sndTransform);
-					a.play(startTime);
 					callback ||= VOID;
-					a.addEventListener(Event.SOUND_COMPLETE, function(e:Event):void { e.target.removeEventListener(e.type, arguments.callee); soundEnded(e, type, null); callback.call(null, e); } );
+					a.addEventListener(Event.SOUND_COMPLETE, function(e:Event):void { e.target.removeEventListener(Event.SOUND_COMPLETE, arguments.callee); soundEnded(e, type, a); callback.call(null, e); } );
+					a.play(startTime);
 					return true;
 				}
 			} else {
@@ -370,11 +370,11 @@
 		/**
 		 * protected functions
 		**/
-		protected function valid(id:int):Boolean {
-			return id > -1 && id < maximumSounds && Sounds[id];
+		protected function valid(id:uint):Boolean {
+			return id < maximumSounds && Sounds[id];
 		}
-		protected function validC(id:int):Boolean {
-			return id > -1 && id < maxPlayableSounds && channels[id];
+		protected function validC(id:uint):Boolean {
+			return id < maxPlayableSounds && channels[id];
 		}
 		protected function increment(id:int):void {
 			++currentPlayingSounds;
@@ -431,7 +431,7 @@ internal class DataStore {
 		b.removeEventListener(e.type, arguments.callee);
 		var remove:Boolean = loop();
 		if (remove) {
-			if (listener.length == 2) try { listener(e, a); return; } catch (er:*) { }
+			if (listener.length == 2) try { listener(e, this); return; } catch (er:*) { }
 			var a:Array = listner;
 			a[2] = listener;
 			b.addEventListener.apply(b, a);
@@ -472,7 +472,6 @@ internal class DataStore {
 		}
 	}
 	public function addEventListener(type:String, listener:Function, useCapture:Boolean = false, priority:int = 0, useWeakReference:Boolean = false):void {
-		var a:DataStore = this;
 		this.listener = listener;
 		listner = [type, listenerRepeater, useCapture, priority, useWeakReference];
 	}
