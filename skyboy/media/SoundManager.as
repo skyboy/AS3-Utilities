@@ -84,11 +84,11 @@
 		}
 		/**
 		 * constructor
-		 * @param	int: maxSounds	 The maximum number of sounds the SoundManager can store (4096)
-		 * @param	int: maxPlayable	 Maxmum number sounds that can be playing at one time (16)
-		 * @param	int: maxOfTypePlayable	 Maxmum number of sounds of a specific type(id) that can be playing at one time (4)
-		 * @param	int: delayForPlays	 The delay (in milliseconds) before another sound of type(id) X can be played again (15)
-		 * @param	SoundTransform: defaultTransform	The default SoundTransform to apply to all sounds added to the manager
+		 * @param	int: maxSounds	 The maximum number of sounds the SoundManager can store (def: 4096)
+		 * @param	int: maxPlayable	 Maxmum number sounds that can be playing at one time (def: 16)
+		 * @param	int: maxOfTypePlayable	 Maxmum number of sounds of a specific type(id) that can be playing at one time (def: 4)
+		 * @param	int: delayForPlays	 The delay (in milliseconds) before another sound of type(id) X can be played again (def: 15)
+		 * @param	SoundTransform: defaultTransform	The default SoundTransform to apply to all sounds added to the manager (def: null)
 		**/
 		public function SoundManager(maxSounds:int = 4096, maxPlayable:int = 16, maxOfTypePlayable:int = 4, delayForPlays:int = 15, defaultTransform:SoundTransform = null):void {
 			maxSounds = maximumSounds = min(maxSounds);
@@ -109,7 +109,7 @@
 		/**
 		 * addSound
 		 * @param	Sound: snd	 The Sound object to add to the manager
-		 * @param	SoundTransform: sndTransform	 The SoundTransform object to apply to all new instances of the sound (null)
+		 * @param	SoundTransform: sndTransform	 The SoundTransform object to apply to all new instances of the sound (def: null)
 		 * @return	int: The ID representing the sound type you just pushed into the manager
 		 */
 		public function addSound(snd:Sound, sndTransform:SoundTransform = null):int {
@@ -125,11 +125,11 @@
 		/**
 		 * addSoundAndPlay
 		 * @param	Sound: snd	 The Sound object to add to the manager
-		 * @param	int: loops	 The number of times the sound will run (0)
-		 * @param	SoundTransform: sndTransform	 A SoundTransform object for use with the sound (null)
-		 * @param	Number: startTime	 The position to start playing the sound from (0.0)
-		 * @param	Function: callback	 A function that will be called when the sound completes (null)
-		 * @param	SoundTransform: defaultSoundTransform	 The SoundTransform object to apply to all new instances of the sound (null)
+		 * @param	int: loops	 The number of times the sound will run (def: 0)
+		 * @param	SoundTransform: sndTransform	 A SoundTransform object for use with the sound (def: null)
+		 * @param	Number: startTime	 The position to start playing the sound from (def: 0.0)
+		 * @param	Function: callback	 A function that will be called when the sound completes (def: null)
+		 * @param	SoundTransform: defaultSoundTransform	 The SoundTransform object to apply to all new instances of the sound (def: null)
 		 * @return	int: The ID representing the sound type you just pushed into the manager
 		 */
 		public function addSoundAndPlay(snd:Sound, loops:int = 0, sndTransform:SoundTransform = null, startTime:Number = 0.0, callback:Function = null, defaultSoundTransform:SoundTransform = null):int {
@@ -140,10 +140,10 @@
 		/**
 		 * addMusicAndPlay
 		 * @param	Sound: snd	 The Sound object to add to the manager
-		 * @param	int: loops	 The number of times the sound will run (0)
-		 * @param	SoundTransform: sndTransform	 A SoundTransform object for use with the sound (null)
-		 * @param	Number: startTime	 The position to start playing the sound from (0.0)
-		 * @param	SoundTransform: defaultSoundTransform	 The SoundTransform object to apply to all new instances of the sound (null)
+		 * @param	int: loops	 The number of times the sound will run (def: 0)
+		 * @param	SoundTransform: sndTransform	 A SoundTransform object for use with the sound (def: null)
+		 * @param	Number: startTime	 The position to start playing the sound from (def: 0.0)
+		 * @param	SoundTransform: defaultSoundTransform	 The SoundTransform object to apply to all new instances of the sound (def: null)
 		 * @return	Object: An Object with the ID representing the sound type you just pushed into the manager as type and the ID of the now playing music as ID
 		 */
 		public function addMusicAndPlay(snd:Sound, loops:int = 0, sndTransform:SoundTransform = null, startTime:Number = 0.0, defaultSoundTransform:SoundTransform = null):Object {
@@ -154,7 +154,7 @@
 		/**
 		 * deleteSound
 		 * @param	int: type	 The ID of a sound added to the manager
-		 * @param	Boolean: stopPlayingAll	 Stop playing all sounds of type? (false)
+		 * @param	Boolean: stopPlayingAll	 Stop playing all sounds of type? (def: false)
 		 * @return	Boolean: true if the sound was removed, false if an invalid type was given
 		 */
 		public function deleteSound(type:int, stopPlayingAll:Boolean = false):Boolean {
@@ -179,13 +179,13 @@
 		/**
 		 * playSound
 		 * @param	int: type	 The ID of a sound added to the manager
-		 * @param	int: loops	 The number of times the sound will run (0)
-		 * @param	SoundTransform: sndTransform	 A SoundTransform object for use with the sound (null)
-		 * @param	Number: startTime	 The position to start playing the sound from (0.0)
-		 * @param	Function: callback	 A function that will be called when the sound completes (null)
+		 * @param	Number: loops	 the number of times the sound will run, the value Infinity will continuously run (def: 0)
+		 * @param	SoundTransform: sndTransform	 A SoundTransform object for use with the sound (def: null)
+		 * @param	Number: startTime	 The position to start playing the sound from (def: 0.0)
+		 * @param	Function: callback	 A function that will be called when the sound completes (def: null)
 		 * @return	int: The ID of the now playing SoundChannel object, -2 if an invalid type, or -3 if the type can't be played
 		 */
-		public function playSound(type:int, loops:int = 0, sndTransform:SoundTransform = null, startTime:Number = 0.0, callback:Function = null):int {
+		public function playSound(type:int, loops:Number = 0, sndTransform:SoundTransform = null, startTime:Number = 0.0, callback:Function = null):int {
 			if (valid(type)) {
 				if (canPlay(type)) {
 					increment(type);
@@ -202,9 +202,9 @@
 		/**
 		 * playMusic
 		 * @param	int: type	 The ID of a sound added to the manager
-		 * @param	Number: loops	 the number of times the sound will run, Infinity will continuously run (0)
-		 * @param	SoundTransform: sndTransform	 a SoundTransform object for use with the sound (null)
-		 * @param	Number: startTime	 the position to start playing the sound from (0.0)
+		 * @param	Number: loops	 the number of times the sound will run, the value Infinity will continuously run (def: 0)
+		 * @param	SoundTransform: sndTransform	 a SoundTransform object for use with the sound (def: null)
+		 * @param	Number: startTime	 the position to start playing the sound from (def: 0.0)
 		 * @return	int: The ID of the now playing SoundChannel object, -2 if an invalid type, or -3 if the type can't be played
 		 */
 		public function playMusic(type:int, loops:Number = 0, sndTransform:SoundTransform = null, startTime:Number = 0.0):int {
@@ -236,7 +236,7 @@
 		}
 		/**
 		 * stopAll
-		 * @param	int: type	The ID of a sound added to the manager, or -1 for all (-1)
+		 * @param	int: type	The ID of a sound added to the manager, or -1 for all (def: -1)
 		 * @return	Boolean: true if all sounds were stopped.
 		 */
 		public function stopAll(type:int = -1):Boolean {
@@ -284,7 +284,7 @@
 		}
 		/**
 		 * pauseAll
-		 * @param	int: type	The ID of a sound added to the manager or -1 for all sounds playing (-1)
+		 * @param	int: type	The ID of a sound added to the manager or -1 for all sounds playing (def: -1)
 		 * @return	Boolean: true if the type provided was valid, or if -1 was passed; false if the type is invalid
 		 */
 		public function pauseAll(type:int = -1):Boolean {
@@ -304,7 +304,7 @@
 		}
 		/**
 		 * unpauseAll
-		 * @param	int: type	The ID of a sound added to the manager or -1 for all sounds (-1)
+		 * @param	int: type	The ID of a sound added to the manager or -1 for all sounds (def: -1)
 		 * @return	Boolean: true if the type provded was valid, or if -1 was passed; false if the type is invalid
 		 */
 		public function unpauseAll(type:int = -1):Boolean {
@@ -336,7 +336,7 @@
 		/**
 		 * setSoundTransform
 		 * @param	int: type	 The ID of a sound added to the manager
-		 * @param	SoundTransform: sndTransform	 The transform to set (null)
+		 * @param	SoundTransform: sndTransform	 The transform to set (def: null)
 		 * @return	Boolean: true if the transform was applied sucessfully
 		 */
 		public function setSoundTransform(type:int, sndTransform:SoundTransform = null):Boolean {
@@ -359,8 +359,8 @@
 		}
 		/**
 		 * setGlobalSoundTransform
-		 * @param	SoundTransform: soundTransform	The sound transform to apply to all sounds.
-		 * @param	Boolean: _override	Override the SoundTransform a sound already has.
+		 * @param	SoundTransform: soundTransform	The sound transform to apply to all sounds
+		 * @param	Boolean: _override	Override the SoundTransform a sound already has (def: false)
 		 */
 		public function setGlobalSoundTransform(soundTransform:SoundTransform, _override:Boolean = false):void {
 			gSoundTransform = soundTransform;
@@ -385,8 +385,8 @@
 		/**
 		 * changeVolume
 		 * @author	UnknownGuardian
-		 * @param	int: id	 An ID returned by playMusic or playSound or -1 for all currently playing or paused sounds
-		 * @param	Number: volume	 The volume to set it to (1)
+		 * @param	int: id	 An ID returned by playMusic or playSound or -1 for all currently playing or paused sounds (def: -1)
+		 * @param	Number: volume	 The volume to set it to (def: 1)
 		 * @return	Boolean: true if the sound volume was succssfully changed
 		 * @update	15/6/2010(skyboy): Added method, changed to use setTransform, and made it so other parts of the tasnform aren't changed
 		 */
@@ -411,7 +411,7 @@
 		/**
 		 * changeSoundVolume
 		 * @param	int: type	 The ID of a sound added to the manager
-		 * @param	Number: volume	 A Number to set the volume to (1)
+		 * @param	Number: volume	 A Number to set the volume to (def: 1)
 		 * @return	Boolean: true if the sound volume was succssfully changed
 		 */
 		public function changeSoundVolume(type:int, volume:Number = 1):Boolean {
@@ -442,7 +442,7 @@
 		/**
 		 * setTransform
 		 * @param	int: id	 An ID returned by playMusic or playSound
-		 * @param	SoundTransform: sndTransform	 The transform to apply (null)
+		 * @param	SoundTransform: sndTransform	 The transform to apply (def: null)
 		 * @return	Boolean: true if the transform was applied sucessfully
 		 */
 		public function setTransform(id:int, sndTransform:SoundTransform = null):Boolean {
