@@ -396,6 +396,7 @@
 				sT.volume = volume;
 				return setTransform(id, sT);
 			} else if (id == -1) {
+				var a:SoundTransform;
 				for each (var channel:DataStore in channels) {
 					if (channel) {
 						a = channel.getTransform() || new SoundTransform;
@@ -527,13 +528,13 @@ final internal class DataStore {
 	public function loop():Boolean {
 		if (loops > 0) {
 			play();
+			if (finitePlays) --loops;
 			return false;
 		}
 		return true;
 	}
 	public function play(startTime:Number = 0.0, _loops:Number = NaN):DataStore {
 		setLoops(_loops);
-		if (finitePlays) --loops;
 		if (sChannel) sChannel.stop();
 		(sChannel = s.play(startTime, 0, sT)).addEventListener(flash.events.Event.SOUND_COMPLETE, listenerRepeater, false, 0, false);
 		return this;
@@ -541,9 +542,9 @@ final internal class DataStore {
 	public function setLoops(_loops:Number):void {
 		if (_loops == _loops) { // this is to make sure it's not NaN (NaN == NaN is false, NaN != NaN is true)
 			if ((finitePlays = _loops != Infinity)) {
-				loops = 1;
-			} else {
 				loops = _loops < 0 ? 0 : _loops < int.MAX_VALUE ? _loops : int.MAX_VALUE;
+			} else {
+				loops = 1;
 			}
 		}
 	}
