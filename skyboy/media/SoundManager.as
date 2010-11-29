@@ -65,18 +65,22 @@
 	 * @editor	UnknownGuardian
 	 * @editor
 	 */
-	public class SoundManager {
+	final public class SoundManager {
 		/**
-		 * protected variables
+		 * private variables
 		**/
-		protected var timeDelay:int = 50, soundTypes:Vector.<int>, Sounds:Vector.<Sound>, channels:Vector.<DataStore>;
-		protected var currentPlayingSounds:int, maxPlayableSounds:int = 16, maxPlayableOfType:int = 4, soundTimers:Vector.<Boolean>;
-		protected var maximumSounds:int, soundLoops:Vector.<int>, Transforms:Vector.<SoundTransform>;
+		private var timeDelay:int, soundTypes:Vector.<int>, Sounds:Vector.<Sound>, channels:Vector.<DataStore>;
+		private var currentPlayingSounds:int, maxPlayableSounds:int, maxPlayableOfType:int, soundTimers:Vector.<Boolean>;
+		private var maximumSounds:int, soundLoops:Vector.<int>, Transforms:Vector.<SoundTransform>, tSoundsPlayed:uint;
+		private var gSoundTransform:SoundTransform;
 		/**
 		 * public variables
 		**/
 		public function get soundsPlaying():int {
 			return currentPlayingSounds;
+		}
+		public function get soundsPlayed():uint {
+			return tSoundsPlayed;
 		}
 		/**
 		 * constructor
@@ -84,9 +88,10 @@
 		 * @param	int: maxPlayable	 Maxmum number sounds that can be playing at one time (16)
 		 * @param	int: maxOfTypePlayable	 Maxmum number of sounds of a specific type(id) that can be playing at one time (4)
 		 * @param	int: delayForPlays	 The delay (in milliseconds) before another sound of type(id) X can be played again (15)
+		 * @param	SoundTransform: defaultTransform	The default SoundTransform to apply to all sounds added to the manager
 		**/
-		public function SoundManager(maxSounds:int = 4096, maxPlayable:int = 16, maxOfTypePlayable:int = 4, delayForPlays:int = 15) {
-			maximumSounds = min(maxSounds);
+		public function SoundManager(maxSounds:int = 4096, maxPlayable:int = 16, maxOfTypePlayable:int = 4, delayForPlays:int = 15, defaultTransform:SoundTransform = null):void {
+			maxSounds = maximumSounds = min(maxSounds);
 			maxPlayableSounds = min(maxPlayable);
 			maxPlayableOfType = min(maxOfTypePlayable);
 			timeDelay = min(delayForPlays);
@@ -96,6 +101,7 @@
 			Transforms = new Vector.<SoundTransform>(maximumSounds, true);
 			channels = new Vector.<DataStore>(maxPlayableSounds, true);
 			soundLoops = new Vector.<int>(maxPlayableSounds, true);
+			if ((gSoundTransform = defaultTransform)) while (maxSounds--) Transforms[maxSounds] = defaultTransform;
 		}
 		/**
 		 * public functions
@@ -108,8 +114,10 @@
 		 */
 		public function addSound(snd:Sound, sndTransform:SoundTransform = null):int {
 			var b:int = Sounds.indexOf(null);
+			if (b == -1) throw new Error("There are no free slots left in the SoundManager."
+									   + "  You must delete some sounds or increase the maximum number of sounds passed to the constructor.");
 			Sounds[b] = snd;
-			Transforms[b] = sndTransform;
+			if (sndTransform) Transforms[b] = sndTransform;
 			soundTypes[b] = 0;
 			soundTimers[b] = true;
 			return b;
@@ -136,12 +144,12 @@
 		 * @param	SoundTransform: sndTransform	 A SoundTransform object for use with the sound (null)
 		 * @param	Number: startTime	 The position to start playing the sound from (0.0)
 		 * @param	SoundTransform: defaultSoundTransform	 The SoundTransform object to apply to all new instances of the sound (null)
-		 * @return	Array: An array with the ID representing the sound type you just pushed into the manager as element 0 and the ID of the now playing music as element 2
+		 * @return	Object: An Object with the ID representing the sound type you just pushed into the manager as type and the ID of the now playing music as ID
 		 */
-		public function addMusicAndPlay(snd:Sound, loops:int = 0, sndTransform:SoundTransform = null, startTime:Number = 0.0, defaultSoundTransform:SoundTransform = null):Array {
+		public function addMusicAndPlay(snd:Sound, loops:int = 0, sndTransform:SoundTransform = null, startTime:Number = 0.0, defaultSoundTransform:SoundTransform = null):Object {
 			var a:int = addSound(snd, defaultSoundTransform);
 			var b:int = playMusic(a, loops, sndTransform, startTime);
-			return [a, b];
+			return new TempObject(a, b);
 		}
 		/**
 		 * deleteSound
@@ -175,21 +183,21 @@
 		 * @param	SoundTransform: sndTransform	 A SoundTransform object for use with the sound (null)
 		 * @param	Number: startTime	 The position to start playing the sound from (0.0)
 		 * @param	Function: callback	 A function that will be called when the sound completes (null)
-		 * @return	Boolean: true if the sound was sucessfully started playing
+		 * @return	int: The ID of the now playing SoundChannel object, -2 if an invalid type, or -3 if the type can't be played
 		 */
-		public function playSound(type:int, loops:int = 0, sndTransform:SoundTransform = null, startTime:Number = 0.0, callback:Function = null):Boolean {
+		public function playSound(type:int, loops:int = 0, sndTransform:SoundTransform = null, startTime:Number = 0.0, callback:Function = null):int {
 			if (valid(type)) {
 				if (canPlay(type)) {
 					increment(type);
-					sndTransform ||= Transforms[type];
 					var b:int = channels.indexOf(null);
-					(channels[b] = new DataStore(Sounds[type], type, loops, soundEnded, sndTransform, callback)).play(startTime);
-					return true;
+					(channels[b] = new DataStore(Sounds[type], type, loops, soundEnded, sndTransform || Transforms[type], callback)).play(startTime);
+					return b;
 				}
+				return -3
 			} else {
 				throw new Error("Sound #" + type + " does not exist.", 2068);
 			}
-			return false;
+			return -2;
 		}
 		/**
 		 * playMusic
@@ -197,28 +205,29 @@
 		 * @param	Number: loops	 the number of times the sound will run, Infinity will continuously run (0)
 		 * @param	SoundTransform: sndTransform	 a SoundTransform object for use with the sound (null)
 		 * @param	Number: startTime	 the position to start playing the sound from (0.0)
-		 * @return	int: the ID of the now playing SoundChannel object
+		 * @return	int: The ID of the now playing SoundChannel object, -2 if an invalid type, or -3 if the type can't be played
 		 */
 		public function playMusic(type:int, loops:Number = 0, sndTransform:SoundTransform = null, startTime:Number = 0.0):int {
-			if (valid(type)) {
-				if (canPlay(type)) {
-					increment(type);
-					sndTransform ||= Transforms[type];
-					var b:int = channels.indexOf(null);
-					(channels[b] = new DataStore(Sounds[type], type, loops, soundEnded, sndTransform)).play(startTime);
-					return b;
-				}
-			} else {
-				throw new Error("Sound #" + type + " does not exist.", 2068);
-			}
-			return -1;
+			return playSound(type, loops, sndTransform, startTime, null);
 		}
 		/**
 		 * stopMusic
-		 * @param	int: id	 An ID returned by playMusic
+		 * @param	int: id	 An ID returned by playMusic or playSound
 		 * @return	Boolean: true if the sound was sucessfully stopped
 		 */
 		public function stopMusic(id:int):Boolean {
+			if (validC(id)) {
+				channels[id].stop();
+				return true;
+			}
+			return false;
+		}
+		/**
+		 * stopSound
+		 * @param	int: id	 An ID returned by playMusic or playSound
+		 * @return	Boolean: true if the sound was sucessfully stopped
+		 */
+		public function stopSound(id:int):Boolean {
 			if (validC(id)) {
 				channels[id].stop();
 				return true;
@@ -233,14 +242,14 @@
 		public function stopAll(type:int = -1):Boolean {
 			var i:int = maxPlayableSounds, b:DataStore;
 			if (type == -1) {
-				while (~--i) {
+				while (i--) {
 					if ((b = channels[i])) {
 						b.stop();
 					}
 				}
 				return true;
 			} else if (valid(type)) {
-				while (~--i) {
+				while (i--) {
 					if ((b = channels[i]) && b.id == type) {
 						b.stop();
 					}
@@ -250,8 +259,8 @@
 			return false;
 		}
 		/**
-		 * pauseMusic
-		 * @param	int: id	 An ID returned by playMusic
+		 * pause
+		 * @param	int: id	 An ID returned by playMusic or playSound
 		 * @return	Boolean: true if the sound was sucessfully stopped
 		 */
 		public function pause(id:int):Boolean {
@@ -262,8 +271,8 @@
 			return false
 		}
 		/**
-		 * unpauseMusic
-		 * @param	int: id	 An ID returned by playMusic
+		 * unpause
+		 * @param	int: id	 An ID returned by playMusic or playSound
 		 * @return	Boolean: true if the sound was sucessfully started
 		 */
 		public function unpause(id:int):Boolean {
@@ -274,27 +283,53 @@
 			return false;
 		}
 		/**
+		 * pauseAll
+		 * @param	int: type	The ID of a sound added to the manager or -1 for all sounds playing (-1)
+		 * @return	Boolean: true if the type provided was valid, or if -1 was passed; false if the type is invalid
+		 */
+		public function pauseAll(type:int = -1):Boolean {
+			var i:DataStore;
+			if (type == -1) {
+				for each(i in channels) {
+					if (i) i.pause();
+				}
+				return true;
+			} else if (valid(type)) {
+				for each(i in channels) {
+					if (i) if(i.id == type) i.pause();
+				}
+				return true
+			}
+			return false;
+		}
+		/**
+		 * unpauseAll
+		 * @param	int: type	The ID of a sound added to the manager or -1 for all sounds (-1)
+		 * @return	Boolean: true if the type provded was valid, or if -1 was passed; false if the type is invalid
+		 */
+		public function unpauseAll(type:int = -1):Boolean {
+			var i:DataStore;
+			if (type == -1) {
+				for each(i in channels) {
+					if (i) i.unpause();
+				}
+				return true;
+			} else if (valid(type)) {
+				for each(i in channels) {
+					if (i) if(i.id == type) i.unpause();
+				}
+				return true
+			}
+			return false;
+		}
+		/**
 		 * isPaused
-		 * @param	int: id	 An ID returned by playMusic
+		 * @param	int: id	 An ID returned by playMusic or playSound
 		 * @return	Boolean: true if paused, otherwise false
 		 */
 		public function isPaused(id:int):Boolean {
 			if (validC(id)) {
 				return channels[id].paused;
-			}
-			return false;
-		}
-		/**
-		 * changeSoundVolume
-		 * @param	int: type	 The ID of a sound added to the manager
-		 * @param	Number: volume	 A Number to set the volume to (1)
-		 * @return	Boolean: true if the sound volume was succssfully changed
-		 */
-		public function changeSoundVolume(type:int, volume:Number = 1):Boolean {
-			if (valid(type)) {
-				var sT:SoundTransform = getSoundTransform(type);
-				sT.volume = volume;
-				return setSoundTransform(type, sT);
 			}
 			return false;
 		}
@@ -314,7 +349,7 @@
 		/**
 		 * getSoundTransform
 		 * @param	int: type	 The ID of a sound added to the manager
-		 * @return	SoundTransform: The sound transfrom or null
+		 * @return	SoundTransform: The SoundTransfrom currently applied to the sound type or null if an invalid type
 		 */
 		public function getSoundTransform(type:int):SoundTransform {
 			if (valid(type)) {
@@ -323,24 +358,89 @@
 			return null;
 		}
 		/**
+		 * setGlobalSoundTransform
+		 * @param	SoundTransform: soundTransform	The sound transform to apply to all sounds.
+		 * @param	Boolean: _override	Override the SoundTransform a sound already has.
+		 */
+		public function setGlobalSoundTransform(soundTransform:SoundTransform, _override:Boolean = false):void {
+			gSoundTransform = soundTransform;
+			var i:int = maxPlayableSounds;
+			if (_override) {
+				while (i--) {
+					Transforms[i] = soundTransform;
+				}
+			} else {
+				while (i--) {
+					if (!Transforms[i]) Transforms[i] = soundTransform;
+				}
+			}
+		}
+		/**
+		 * getGlobalSoundTransform
+		 * @return	SoundTransform: The current sound transform applied to all sounds that haven't overridden it.
+		 */
+		public function getGlobalSoundTransform():SoundTransform {
+			return gSoundTransform;
+		}
+		/**
 		 * changeVolume
 		 * @author	UnknownGuardian
-		 * @param	int: id	 An ID returned by playMusic
+		 * @param	int: id	 An ID returned by playMusic or playSound or -1 for all currently playing or paused sounds
 		 * @param	Number: volume	 The volume to set it to (1)
 		 * @return	Boolean: true if the sound volume was succssfully changed
 		 * @update	15/6/2010(skyboy): Added method, changed to use setTransform, and made it so other parts of the tasnform aren't changed
 		 */
-		public function changeVolume(id:int, volume:Number = 1):Boolean {
+		public function changeVolume(id:int = -1, volume:Number = 1):Boolean {
 			if (validC(id)) {
-				var sT:SoundTransform = getTransform(id);
-				sT.volume = volume; // let flash throw it's own error here
+				var sT:SoundTransform = getTransform(id) || new SoundTransform;
+				sT.volume = volume;
 				return setTransform(id, sT);
+			} else if (id == -1) {
+				for each (var channel:DataStore in channels) {
+					if (channel) {
+						a = channel.getTransform() || new SoundTransform;
+						a.volume = volume;
+						channel.setTransform(a);
+					}
+				}
+				return true;
 			}
 			return false;
 		}
 		/**
+		 * changeSoundVolume
+		 * @param	int: type	 The ID of a sound added to the manager
+		 * @param	Number: volume	 A Number to set the volume to (1)
+		 * @return	Boolean: true if the sound volume was succssfully changed
+		 */
+		public function changeSoundVolume(type:int, volume:Number = 1):Boolean {
+			if (valid(type)) {
+				var sT:SoundTransform = getSoundTransform(type);
+				sT.volume = volume;
+				return setSoundTransform(type, sT);
+			}
+			return false;
+		}
+		/**
+		 * changeGlobalVolume
+		 * @param	Number: volume	The volume to set on all sounds, playing or to be played
+		 */
+		public function changeGlobalVolume(volume:Number):void {
+			var i:int = maxPlayableSounds, a:SoundTransform;
+			while (i--) {
+				changeSoundVolume(i, volume);
+			}
+			for each (var channel:DataStore in channels) {
+				if (channel) {
+					a = channel.getTransform() || new SoundTransform;
+					a.volume = volume;
+					channel.setTransform(a);
+				}
+			}
+		}
+		/**
 		 * setTransform
-		 * @param	int: id	 An ID returned by playMusic
+		 * @param	int: id	 An ID returned by playMusic or playSound
 		 * @param	SoundTransform: sndTransform	 The transform to apply (null)
 		 * @return	Boolean: true if the transform was applied sucessfully
 		 */
@@ -353,7 +453,7 @@
 		}
 		/**
 		 * getTransform
-		 * @param	int: id	 An ID returned by playMusic
+		 * @param	int: id	 An ID returned by playMusic or playSound
 		 * @return	SoundTransform: The sound transfrom or null
 		 */
 		public function getTransform(id:int):SoundTransform {
@@ -363,27 +463,28 @@
 			return null;
 		}
 		/**
-		 * protected functions
+		 * private functions
 		**/
-		protected function valid(id:uint):Boolean {
+		private function valid(id:uint):Boolean {
 			return id < maximumSounds && Sounds[id];
 		}
-		protected function validC(id:uint):Boolean {
+		private function validC(id:uint):Boolean {
 			return id < maxPlayableSounds && channels[id];
 		}
-		protected function increment(id:int):void {
+		private function increment(id:int):void {
+			++tSoundsPlayed;
 			++currentPlayingSounds;
 			++soundTypes[id];
 			switchTypeCanPlay(id);
 			setTimeout(switchTypeCanPlay, timeDelay, id);
 		}
-		protected function canPlay(id:int):Boolean {
+		private function canPlay(id:int):Boolean {
 			return soundTimers[id] && currentPlayingSounds < maxPlayableSounds && soundTypes[id] < maxPlayableOfType;
 		}
-		protected function switchTypeCanPlay(id:int):void {
+		private function switchTypeCanPlay(id:int):void {
 			soundTimers[id] = !soundTimers[id];
 		}
-		protected function soundEnded(id:int, dStore:DataStore):void {
+		private function soundEnded(id:int, dStore:DataStore):void {
 			if (dStore) {
 				var b:int = channels.indexOf(dStore);
 				if (~b && b < maxPlayableSounds) {
@@ -393,21 +494,12 @@
 			--soundTypes[id];
 			--currentPlayingSounds;
 		}
-		protected function min(x:int):int {
-			if (x < 0) {
-				x = -x;
-			}
-			return x < 2147483647 ? x : 2147483647;
-		}
-		/**
-		 * private functions
-		**/
-		private function VOID(...Void):void {
-			return;
+		private function min(x:uint):int {
+			return x > int.MAX_VALUE ? int.MAX_VALUE : x;
 		}
 	}
 }
-internal class DataStore {
+final internal class DataStore {
 	private var sChannel:flash.media.SoundChannel, s:flash.media.Sound, loops:int, sT:flash.media.SoundTransform;
 	private var pausePos:Number = 0, finitePlays:Boolean, listener:Function, _p:Boolean = false, _id:int, sE:Function;
 	private function listenerRepeater(e:flash.events.Event):void {
@@ -422,7 +514,7 @@ internal class DataStore {
 		}
 	}
 	public function get id():int {
-		return _id
+		return _id;
 	}
 	public function DataStore(_s:flash.media.Sound, id:int, _loops:Number, SE:Function, _sT:flash.media.SoundTransform = null, callback:Function = null) {
 		s = _s;
@@ -480,8 +572,6 @@ internal class DataStore {
 	public function get paused():Boolean {
 		return _p;
 	}
-	public function dispatchEvent(...Void):void {
-	}
 	/**
 	 * Change soundTransform
 	 * @author  UnknownGuardian
@@ -491,15 +581,21 @@ internal class DataStore {
 	 */
 	public function setTransform(t:flash.media.SoundTransform):void {
 		sT = t;
-		if (!sChannel) return;
-		sChannel.soundTransform = t;
+		if (sChannel) sChannel.soundTransform = t;
 	}
 	/**
 	 * getTransform
-	 * @return SoundTransform: the current sound transform of the SoundChannel
+	 * @return SoundTransform: the SoundTransform that gets applied to the playing sound
 	 */
 	public function getTransform():flash.media.SoundTransform {
-		if (!sChannel) return null;
-		return sChannel.soundTransform;
+		if (!sT) return sT = new flash.media.SoundTransform;
+		return sT;
+	}
+}
+final internal class TempObject extends Object {
+	public var ID:int, id:int, type:int;
+	public function TempObject(__type:int, _ID:int):void {
+		type = __type;
+		ID = id = _ID;
 	}
 }
