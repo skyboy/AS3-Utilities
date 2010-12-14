@@ -65,12 +65,14 @@ package skyboy.text {
 				return null;
 			}
 			data = data.valueOf();
-			var temp:int, objs:int;
 			var e:int = data.length;
 			if (e == 0) return null;
+			var temp:int, objs:int = -preObjs.length;
 			while ((temp = data.indexOf("}", temp + 1)) !== -1) ++objs;
-			preObjs.length = objs;
-			while (objs-- > 0) preObjs[objs] = new Object;
+			if (objs > 0) {
+				preObjs.length = objs;
+				while (objs-- > 0) preObjs[objs] = new Object;
+			}
 			objs = temp = 0;
 			while ((temp = data.indexOf("]", temp + 1)) !== -1) ++objs;
 			preArrs.length = objs;
@@ -99,6 +101,8 @@ package skyboy.text {
 			if (data === null || data === undefined || data is Function) return "null";
 			if (data is String) {
 				return '"' + (advStringH ? handleStringE(data) : data.replace(qRepl, '\\$&')) + '"';
+			} else if (data is XML) {
+				return '"' + (advStringH ? handleStringE(data.toXMLString()) : data.toXMLString().replace(qRepl, '\\$&')) + '"';
 			} else if (data is Number) {
 				if (data != data || data == Infinity || data == -Infinity) return "0";
 				return data.toString(10);
