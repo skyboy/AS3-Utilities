@@ -57,12 +57,18 @@ package skyboy.collections {
 	 * @author skyboy
 	 */
 	public final class DenseMap {
+		public static const NUMERIC:uint = Array.NUMERIC;
+		public static const DESCENDING:uint = Array.DESCENDING;
+		public static const CASEINSENSITIVE:uint = Array.CASEINSENSITIVE;
+		public static const UNIQUESORT:uint = Array.UNIQUESORT;
+		public static const RETURNINDEXEDARRAY:uint = Array.RETURNINDEXEDARRAY;
 		private static const string:Function = (Class as Object).toString;
 		private const nulls:Vector.<uint> = new Vector.<uint>();
+		private const sortVec:Vector.<*> = new Vector.<*>();
 		public const vals:Vector.<*> = new Vector.<*>();
 		public var prev:Vector.<uint> = new Vector.<uint>(), next:Vector.<uint> = new Vector.<uint>();
-		public var starti:uint, endi:uint, midi:uint, curi:uint, curIx:uint;
-		public var mLen:uint, _length:uint, hLen:uint, qLen:uint, q3Len:uint;
+		public var starti:uint, endi:uint, curi:uint, curIx:uint;
+		public var mLen:uint, _length:uint, hLen:uint;
 		private var hArray:Array, dirty:Boolean;
 		public function get length():uint {
 			return _length;
@@ -101,7 +107,7 @@ package skyboy.collections {
 					while (i--) {
 						vals[nulls[i] = i] = null;
 					}
-					curi = curIx = q3Len = qLen = hLen = starti = midi = endi = _length = prev[0] = next[0] = 0;
+					curi = curIx = hLen = starti = endi = _length = prev[0] = next[0] = 0;
 					dirty = false;
 					return;
 				}
@@ -109,55 +115,132 @@ package skyboy.collections {
 				i = _length - len;
 				while (--i) pop();
 			}
-			if ((a = hLen - (hLen = _length >> 1))) if (a > 0) {
-				i = prev[midi];
-				while (--a) i = prev[i];
-				midi = i;
-			} else {
-				i = next[midi];
-				while (++a) i = next[i];
-				midi = i;
-			}
-			q3Len = (qLen = hLen >> 1) * 3;
+			hLen = _length >> 1;
+		}
+		public static function fromString(values:String, sep:String = ","):DenseMap {
+			return new DenseMap(values.split(sep));
+		}
+		public static function fromArray(values:Array):DenseMap {
+			return new DenseMap(values);
+		}
+		public static function fromVector(values:Vector.<*>):DenseMap {
+			var a:DenseMap = new DenseMap(values.length);
+			var b:Vector.<*> = a.vals; // we can access private instance variables of DenseMap from within the static methods
+			var i:uint = values.length;
+			while (i--) b[i] = values[i];
+			return a;
 		}
 		public function DenseMap(...values):void {
 			var a:uint = values.length, b:*;
 			if (a) {
 				if (a == 1) {
 					if ((b = values[0]) is Number) {
-						q3Len = (qLen = (midi = hLen = (nulls.length = mLen = prev.length = next.length = vals.length = _length = a = b) >> 1) >> 1) * 3;
-						prev[nulls.length = 0] = endi = --a;
-						while (a--) prev[next[a] = a + 1] = a;
+						if ((a = b)) {
+							_length = a;
+							mLen = a;
+							vals.length = a;
+							next.length = a;
+							prev.length = a;
+							nulls.length = a;
+							nulls.length = 0;
+							hLen = a >>> 1;
+							--a;
+							endi = a;
+							prev[0] = a;
+							while (a--) {
+								prev[next[a] = a + 1] = a;
+							}
+						}
 					} else if (b is Array) {
 						var c:Array = b;
-						q3Len = (qLen = (midi = hLen = (nulls.length = mLen = prev.length = next.length = vals.length = _length = a = c.length) >> 1) >> 1) * 3;
-						prev[nulls.length = 0] = endi = --a;
+						a = c.length;
+						_length = a;
+						mLen = a;
+						vals.length = a;
+						next.length = a;
+						prev.length = a;
+						nulls.length = a;
+						nulls.length = 0;
+						hLen = a >>> 1;
+						--a;
+						endi = a;
+						prev[0] = a;
 						vals[a] = c[a];
 						while (a--) vals[prev[next[a] = a + 1] = a] = c[a];
 					} else {
-						q3Len = (qLen = (midi = hLen = (mLen = prev.length = next.length = vals.length = _length = 1) >> 1) >> 1) * 3;
-						vals[next[prev[endi = starti = 0] = 0] = 0] = b;
+						_length = 1;
+						mLen = 1;
+						vals.length = 1;
+						next.length = 1;
+						prev.length = 1;
+						nulls.length = 1;
+						hLen = 1;
+						nulls.length = 0;
+						endi = 0;
+						starti = 0;
+						prev[0] = 0
+						next[0] = 0
+						vals[0] = b;
 					}
 				} else {
-					q3Len = (qLen = (midi = hLen = (mLen = prev.length = next.length = vals.length = _length = a) >> 1) >> 1) * 3;
-					prev[0] = endi = --a;
+					_length = a;
+					mLen = a;
+					vals.length = a;
+					next.length = a;
+					prev.length = a;
+					nulls.length = a;
+					a >>>= 1;
+					hLen = a;
+					nulls.length = 0;
+					a = b - 1;
+					endi = a;
+					prev[0] = a;
 					vals[a] = values[a];
 					while (a--) vals[prev[next[a] = a + 1] = a] = values[a];
 				}
 			}
-			hArray = new Array(15);
+			sortVec.length = mLen;
+			hArray = new Array(mLen);
+		}
+		public function push1(value:*):uint {
+			var c:uint;
+			if (nulls.length) {
+				c = nulls.pop();
+				next[c] = starti
+				prev[c] = endi;
+				prev[starti] = c
+				next[endi] = c
+				endi = c;
+				vals[c] = value;
+				++_length;
+				hLen = _length >> 1;
+				return _length;
+			}
+			dirty = false;
+			++mLen;
+			c = _length;
+			++_length;
+			next.length = c
+			prev.length = c
+			vals.length = c;
+			sortVec.length = c;
+			next[c] = starti
+			prev[c] = endi;
+			prev[starti] = c
+			next[endi] = c
+			endi = c;
+			vals[c] = value;
+			hLen = _length >> 1;
+			return _length;
 		}
 		public function push(...values):uint {
 			var a:uint = values.length, i:uint, c:uint;
-			//trace('push\n', next, '\n', prev, '\n', starti, endi);
 			if (a == 1) {
 				if (nulls.length) {
 					c = nulls.pop();
 					vals[endi = prev[next[c] = starti] = next[prev[c] = endi] = c] = values[0];
-					if (hLen - (hLen = ++_length >> 1)) {
-						midi = next[midi];
-						q3Len = (qLen = hLen >> 1) * 3;
-					}
+					++_length;
+					hLen = _length >> 1;
 					return _length;
 				}
 				dirty = false;
@@ -165,10 +248,7 @@ package skyboy.collections {
 				c = (next.length = (prev.length = (vals.length = ++_length))) - 1;
 				next[endi = next[prev[c] = endi] = c] = starti;
 				vals[prev[starti] = c] = values[0];
-				if (hLen - (hLen = ++_length >> 1)) {
-					midi = next[midi];
-					q3Len = (qLen = hLen >> 1) * 3;
-				}
+				hLen = _length >> 1;
 				return c;
 			} else if (a) {
 				if (nulls.length) {
@@ -179,7 +259,7 @@ package skyboy.collections {
 						vals[endi = prev[next[c] = starti] = next[prev[c] = endi] = c] = values[i++];
 					}
 					if (i != a) {
-						prev[starti] = next.length = prev.length = vals.length = _length;
+						c = prev[starti] = sortVec.length = next.length = prev.length = vals.length = _length;
 						c = _length - (a - i);
 						mLen += a - i;
 						vals[next[prev[c] = endi] = c] = values[i];
@@ -189,16 +269,11 @@ package skyboy.collections {
 						}
 						next[endi = c] = starti;
 					}
-					if ((a = hLen - (hLen = _length >> 1))) {
-						i = midi;
-						while (a++) i = next[i];
-						midi = i;
-						q3Len = (qLen = hLen >> 1) * 3;
-					}
+					hLen = _length >> 1;
 					return _length;
 				}
 				c = _length;
-				next.length = prev.length = vals.length = _length += a;
+				sortVec.length = next.length = prev.length = vals.length = _length += a;
 				mLen += a;
 				vals[next[prev[c] = endi] = c] = values[0];
 				while (++i < a) {
@@ -206,12 +281,7 @@ package skyboy.collections {
 					next[prev[c] = c - 1] = c;
 				}
 				next[endi = c] = starti;
-				if ((a = hLen - (hLen = _length >> 1))) {
-					i = midi;
-					while (a++) i = next[i];
-					midi = i;
-					q3Len = (qLen = hLen >> 1) * 3;
-				}
+				hLen = _length >> 1;
 			}
 			return _length;
 		}
@@ -220,33 +290,57 @@ package skyboy.collections {
 			next[prev[starti] = endi = prev[i]] = starti;
 			nulls.push(i);
 			dirty = true;
-			if (hLen - (hLen = --_length >> 1)) {
-				midi = prev[midi];
-				q3Len = (qLen = hLen >> 1) * 3;
-			}
+			--_length;
+			hLen = _length >> 1;
 			return vals[i];
+		}
+		public function unshift1(value:*):uint {
+			var c:uint;
+			if (nulls.length) {
+				c = nulls.pop();
+				next[c] = starti
+				prev[c] = endi;
+				prev[starti] = c
+				next[endi] = c
+				starti = c;
+				vals[c] = value;
+				++_length;
+				hLen = _length >> 1;
+				return _length;
+			}
+			dirty = false;
+			++mLen;
+			c = _length;
+			++_length;
+			next.length = c
+			prev.length = c
+			vals.length = c;
+			sortVec.length = c;
+			next[c] = starti
+			prev[c] = endi;
+			prev[starti] = c
+			next[endi] = c
+			starti = c;
+			vals[c] = value;
+			hLen = _length >> 1;
+			return _length;
 		}
 		public function unshift(...values):uint {
 			var a:uint = values.length, i:uint, c:uint;
-			//trace('unshift\n', next, '\n', prev, '\n', starti, endi);
 			if (a == 1) {
 				if (nulls.length) {
 					c = nulls.pop();
 					vals[starti = prev[next[c] = starti] = next[prev[c] = endi] = c] = values[0];
-					if (hLen - (hLen = ++_length >> 1)) {
-						midi = next[midi];
-					}
-					q3Len = (qLen = hLen >> 1) * 3;
+					++_length;
+					hLen = _length >> 1;
 					return _length;
 				}
 				dirty = false;
 				++mLen;
-				c = (next.length = (prev.length = (vals.length = ++_length))) - 1;
+				c = (sortVec.length = next.length = (prev.length = (vals.length = ++_length))) - 1;
 				vals[starti = prev[next[c] = starti] = next[prev[c] = endi] = c] = values[0];
-				if (hLen - (hLen = ++c >> 1)) {
-					midi = next[midi];
-				}
-				q3Len = (qLen = hLen >> 1) * 3;
+				++_length;
+				hLen = _length >> 1;
 				return c;
 			} else if (a) {
 				temp: {
@@ -265,7 +359,7 @@ package skyboy.collections {
 						vals[c] = values[i++];
 					}
 					if (i != a) {
-						next.length = prev.length = vals.length = _length;
+						sortVec.length = next.length = prev.length = vals.length = _length;
 						mLen += a - i;
 						n = c;
 						prev[next[n] = c = _length - (a - i)] = n;
@@ -277,27 +371,17 @@ package skyboy.collections {
 						}
 					}
 					next[prev[s] = c] = s;
-					if ((i = hLen - (hLen = _length >> 1))) {
-						a = midi;
-						while (i++) a = next[a];
-						midi = a;
-					}
-					q3Len = (qLen = hLen >> 1) * 3;
+					hLen = _length >> 1;
 					return _length;
 				}
 				c = _length;
-				next.length = prev.length = vals.length = _length += a;
+				sortVec.length = next.length = prev.length = vals.length = _length += a;
 				mLen += a;
 				while (i != a) {
 					vals[starti = prev[next[c] = starti] = next[prev[c] = endi] = c] = values[i++];
 					++c;
 				}
-				if ((i = hLen - (hLen = _length >> 1))) {
-					a = midi;
-					while (i++) a = next[a];
-					midi = a;
-				}
-				q3Len = (qLen = hLen >> 1) * 3;
+				hLen = _length >> 1;
 			}
 			return _length;
 		}
@@ -306,10 +390,8 @@ package skyboy.collections {
 			next[prev[starti = next[i]] = endi] = starti;
 			nulls.push(i);
 			dirty = true;
-			if (hLen - (hLen = --_length >> 1)) {
-				midi = prev[midi];
-				q3Len = (qLen = hLen >> 1) * 3;
-			}
+			--_length;
+			hLen = _length >> 1;
 			return vals[i];
 		}
 		public function reverse():DenseMap {
@@ -319,6 +401,7 @@ package skyboy.collections {
 			return this;
 		}
 		public function join(sep:String = ","):String {
+			if (!_length) return "";
 			var ret:String = "", i:uint = starti;
 			var e:uint = endi;
 			var next:Vector.<uint> = this.next, vals:Vector.<*> = this.vals;
@@ -335,6 +418,7 @@ package skyboy.collections {
 		 * @return	StringA string representation of the DenseMap in reverse order joined by sep.
 		 */
 		public function joinR(sep:String = ","):String {
+			if (!_length) return "";
 			var ret:String = "", i:uint = endi;
 			var e:uint = starti;
 			if (i != e) do {
@@ -344,6 +428,7 @@ package skyboy.collections {
 			return ret + vals[e];
 		}
 		public function toString():String {
+			if (!_length) return "";
 			var ret:String = "";
 			var e:uint = endi, i:uint = starti;
 			if (i != e) do {
@@ -354,10 +439,11 @@ package skyboy.collections {
 		}
 		/**
 		 * toStringR
-		 * Retrusn a string representation of the DenseMap in reverse order.
+		 * Retruns a string representation of the DenseMap in reverse order.
 		 * @return	String: A string representation of the DenseMap in reverse order.
 		 */
 		public function toStringR():String {
+			if (!_length) return "";
 			var ret:String = "";
 			var e:uint = starti, i:uint = endi;
 			if (i != e) do {
@@ -366,85 +452,176 @@ package skyboy.collections {
 			} while (i != e);
 			return ret + vals[e];
 		}
-		//*
-		final private function quickSort(input:Vector.<*>, left:int = 0, right:int = int.MAX_VALUE):void {
-			var i:int = left < 0 ? left = 0 : left, t:*;
-			var j:int = right >= input.length ? right = input.length - 1 : right;
-			var pivotPoint:* = input[int((right + left) * .5 + 0.5)];
+		private function quickSort(input:Vector.<*>, left:uint, right:uint, d:uint = 0):void {
+			var j:uint = right >= input.length ? right = input.length - 1 : right;
+			if (left >= right) return;
+			var i:uint = left;
+			var size:uint = right - left;
+			var pivotPoint:* = input[(right + left) >>> 1], t:*;
 			do {
+				if (size < 9) {
+					pivotPoint = input[left];
+					do {
+						do {
+							++left;
+							if (pivotPoint > input[left]) {
+								t = input[left];
+								do {
+									input[left--] = input[left];
+								} while (left > i && t < input[left]);
+								input[left] = t;
+								pivotPoint = t;
+							}
+						} while (left < right);
+						++i;
+						left = i;
+						pivotPoint = input[left];
+					} while (i < right);
+					return;
+				}
 				while (left <= right) {
 					if (input[right] > pivotPoint) do {
-						--right
-					} while (t > pivotPoint);
+						--right;
+					} while (input[right] > pivotPoint);
 					if (input[left] < pivotPoint) do {
-						++left
+						++left;
 					} while (input[left] < pivotPoint);
-					if (left <= right) {
+					if (left < right) {
 						t = input[left];
 						input[left] = input[right];
 						input[right] = t;
 						++left, --right;
+					} else break;
+				}
+				if (right) {
+					if (left == right) {
+						++left, --right;
 					}
-				}
-				if (i < right) {
-					quickSort(input, i, right);
-				}
+					if (i < right) {
+						quickSort(input, i, right, d + 1);
+					}
+				} else if (!left) left = 1;
 				if (j <= left) return;
 				i = left;
 				right = j;
-				pivotPoint = input[int((right + left) * .5 + 0.5)];
+				pivotPoint = input[(right + left) >>> 1];
+				size = right - left;
 			} while (true);
 		}
-		final private function quickSortLeg(input:Vector.<*>, left:int = 0, right:int = int.MAX_VALUE):void {
-			var i:int = left < 0 ? left = 0 : left, t:*;
-			var j:int = right >= input.length ? right = input.length - 1 : right;
-			var pivotPoint:String = String(input[int((right + left) * .5 + 0.5)]);
+		final private function quickSortLeg(input:Vector.<*>, left:uint, right:uint, d:uint = 0):void {
+			var j:uint = right >= input.length ? right = input.length - 1 : right;
+			if (left >= right) return;
+			var i:uint = left;
+			var size:uint = right - left;
+			var pivotPoint:String = String(input[(right + left) >>> 1]), t:*;
 			do {
-				while (left <= right) {
-					if (String(input[left]) < pivotPoint) do { ++left; } while (String(input[left]) < pivotPoint);
-					if (String(input[right]) > pivotPoint) do { --right; } while (String(input[right]) > pivotPoint);
-					if (left <= right) {
-						t = input[left];
-						input[left++] = input[right];
-						input[right--] = t;
-					}
+				if (size < 9) {
+					pivotPoint = String(input[left]);
+					do {
+						do {
+							++left;
+							if (pivotPoint > String(input[left])) {
+								t = input[left];
+								pivotPoint = String(t);
+								do {
+									input[left--] = input[left];
+								} while (left > i && pivotPoint < String(input[left]));
+								input[left] = t;
+							}
+						} while (left < right);
+						++i;
+						left = i;
+						pivotPoint = String(input[left]);
+					} while (i < right);
+					return;
 				}
-				if (i < right) {
-					quickSortLeg(input, i, right);
-				}
-				if (j <= left) return;
-				i = left;
-				right = j;
-				pivotPoint = String(input[int((right + left) * .5 + 0.5)]);
-			} while (true);
-		}
-		final private function quickSortC(input:Vector.<*>, callback:Function, left:int = 0, right:int = int.MAX_VALUE):void {
-			var i:int = left < 0 ? left = 0 : left, t:*;
-			var j:int = right >= input.length ? right = input.length - 1 : right;
-			var pivotPoint:* = input[int((right + left) * .5 + 0.5)];
-			do {
 				while (left <= right) {
-					while (callback(input[left], pivotPoint) < 0) {
+					if (String(input[right]) > pivotPoint) do {
+						--right;
+					} while (String(input[right]) > pivotPoint);
+					if (String(input[left]) < pivotPoint) do {
 						++left;
-						if (left == right) break;
+					} while (String(input[left]) < pivotPoint);
+					if (left < right) {
+						t = input[left];
+						input[left] = input[right];
+						input[right] = t;
+						++left, --right;
+					} else break;
+				}
+				if (right) {
+					if (left == right) {
+						++left, --right;
 					}
-					while (callback(input[right], pivotPoint) > 0) {
+					if (i < right) {
+						quickSortLeg(input, i, right, d + 1);
+					}
+				} else if (!left) left = 1;
+				if (j <= left) return;
+				i = left;
+				right = j;
+				pivotPoint = String(input[(right + left) >>> 1]);
+				size = right - left;
+			} while (true);
+		}
+		final private function quickSortC(input:Vector.<*>, callback:Function, left:uint, right:uint, d:uint = 0):void {
+			var j:uint = right >= input.length ? right = input.length - 1 : right;
+			if (left >= right) return;
+			var i:uint = left;
+			var size:uint = right - left;
+			var pivotPoint:* = input[(right + left) >>> 1], t:*;
+			//if (callback(pivotPoint, pivotPoint) != 0) throw new Error("Callback Error: Callback does not sort correctly.");
+			do {
+				if (size < 9) {
+					do {
+						pivotPoint = input[left];
+						do {
+							++left;
+							if (callback(input[left], pivotPoint) <= 0) {
+								t = input[left];
+								do {
+									input[left--] = input[left];
+								} while (left > i && callback(input[left], t) < 0);
+								input[left] = t;
+								pivotPoint = t;
+							}
+							--size;
+						} while (size && left < right);
+						++i;
+						left = i;
+						size = right - left;
+					} while (left < right);
+					return;
+				}
+				while (left <= right) {
+					if (callback(input[right], pivotPoint) > 0) do {
 						--right;
 						if (left == right) break;
-					}
-					if (left <= right) {
+					} while (callback(input[right], pivotPoint) > 0);
+					if (callback(input[left], pivotPoint) < 0) do {
+						++left;
+						if (left == right) break;
+					} while (callback(input[left], pivotPoint) < 0);
+					if (left < right) {
 						t = input[left];
-						input[left++] = input[right];
-						input[right--] = t;
+						input[left] = input[right];
+						input[right] = t;
+						++left, --right;
+					} else break;
+				}
+				if (right) {
+					if (left == right) {
+						++left, --right;
 					}
-				}
-				if (i < right) {
-					quickSortC(input, callback, i, right);
-				}
+					if (i < right) {
+						quickSortC(input, callback, i, right, d + 1);
+					}
+				} else if (!left) left = 1;
 				if (j <= left) return;
 				i = left;
 				right = j;
-				pivotPoint = input[int((right + left) * .5 + 0.5)];
+				pivotPoint = input[(right + left) >>> 1];
+				size = right - left;
 			} while (true);
 		}
 		public function sort(callback:* = null, options:uint = 0):DenseMap {
@@ -452,61 +629,162 @@ package skyboy.collections {
 			if (n < 2) return this;
 			if (dirty) flush();
 			if (callback is Function) {
-				quickSortC(vals, callback);
-			} else if (callback is int) {
-				if (callback & Array.NUMERIC) quickSort(vals); else quickSortLeg(vals);
+				quickSortC(vals, callback, 0, mLen);
 			} else {
-				// TODO: merge quickSort and sort, make quickSort iterative
-				if (options & Array.NUMERIC) quickSort(vals); else quickSortLeg(vals);
+				var input:Vector.<*> = vals;
+				var q:uint, left:uint, right:uint = mLen;
+				var t:*;
+				while (q != right) {
+					if (input[q] === undefined) {
+						--right;
+						input[q] = input[right];
+						input[right] = undefined;
+					} else ++q;
+				}
+				q = right - 1;
+				while (q) {
+					t = input[q];
+					if (t != t) {
+						--right;
+						input[q] = input[right];
+						input[right] = NaN;
+					} else --q;
+				}
+				if (right) {
+					--right;
+					if (right){
+						q = right;
+						while (q > left) {
+							if (input[q] === null) {
+								input[q] = input[left];
+								input[left] = null;
+								++left;
+							} else --q;
+						}
+						if (uint(right - 1) > left) {
+							if (callback is Number) options = callback;
+							if (options & NUMERIC) {
+								quickSort(input, left, right);
+							} else {
+								quickSortLeg(input, left, right);
+							}
+						}
+					}
+				}
 			}
-			next[endi = prev[starti = 0] = --n] = 0;
-			while (--n) prev[next[n] = n + 1] = n;
+			if (options & DESCENDING) {
+				prev[starti = next[endi = 0] = --n] = 0;
+				while (n--) next[prev[n] = n + 1] = n;
+			} else {
+				next[endi = prev[starti = 0] = --n] = 0;
+				while (--n) prev[next[n] = n + 1] = n;
+			}
 			return this;
 		}
-		final private function quickSortOn(input:Vector.<*>, name:String, left:int = 0, right:int = int.MAX_VALUE):void {
-			var i:int = left < 0 ? left = 0 : left;
-			var j:int = right >= input.length ? right = input.length - 1 : right;
-			var T:int = (left + right) * .5 + 0.5, o:Boolean;
-			while (input[T] == null) {
-				if (++T > right) break;
-			}
-			if (input[T] == null) {
-				T = (left + right) * .5 + 0.5;
-				do {
-					if (--T < left) return;
-				} while (input[T] == null)
-			}
-			var t:* = input[T], pivotPoint:* = name in t ? t[name] : t;
-			while (left < right) {
-				while ((t = input[T = right]) && (name in t ? t[name] : t) > pivotPoint) {
-					next[prev[T] = --right] = T;
+		final private function quickSortOn(input:Vector.<*>, sInput:Vector.<*>, left:int, right:int, d:uint = 0):void {
+			var j:uint = right >= input.length ? right = input.length - 1 : right;
+			if (left >= right) return;
+			var i:uint = left;
+			var size:uint = right - left;
+			var pivotPoint:* = input[(right + left) >>> 1], t:*;
+			do {
+				if (size < 9) {
+					do {
+						pivotPoint = input[left];
+						do {
+							++left;
+							if (pivotPoint > input[left]) {
+								pivotPoint = input[left];
+								t = sInput[left];
+								do {
+									input[left] = input[left - 1];
+									sInput[left--] = sInput[left];
+								} while (left > i && pivotPoint < input[left]);
+								input[left] = pivotPoint;
+								sInput[left] = t;
+							}
+						} while (left < right);
+						++i;
+						left = i;
+					} while (i < right);
+					return;
 				}
-				while ((t = input[T = left]) && (name in t ? t[name] : t) < pivotPoint) {
-					prev[next[T] = ++left] = T;
+				while (left <= right) {
+					if (input[right] > pivotPoint) do {
+						--right;
+					} while (input[right] > pivotPoint);
+					if (input[left] < pivotPoint) do {
+						++left;
+					} while (input[left] < pivotPoint);
+					if (left < right) {
+						t = input[left];
+						input[left] = input[right];
+						input[right] = t;
+						t = sInput[left];
+						sInput[left] = sInput[right];
+						sInput[right] = t;
+						++left, --right;
+					} else break;
 				}
-				if (left < right) {
-					input[left++] = input[right];
-					input[right--] = t;
-					o = true;
-				}
-			}
-			if (o) {
-				if (left == right) ++left, --right;
-				if (i > right) {
-					quickSortOn(input, name, i, right);
-				}
-				if (left < j) {
-					quickSortOn(input, name, left, j);
-				}
-			}
+				if (right) {
+					if (left == right) {
+						++left, --right;
+					}
+					if (i < right) {
+						quickSortOn(input, sInput, i, right, d + 1);
+					}
+				} else if (!left) left = 1;
+				if (j <= left) return;
+				i = left;
+				right = j;
+				pivotPoint = input[(right + left) >>> 1];
+				size = right - left;
+			} while (true);
 		}
-		public function sortOn(name:String):DenseMap {
+		public function sortOn(name:String, options:uint = 0):DenseMap {
 			var n:uint = _length;
 			if (n < 2) return this;
 			if (dirty) flush();
-			// TODO: merge quickSortOn and sortOn, make quickSortOn iterative
-			quickSortOn(vals, name);
-			next[endi = prev[starti = 0] = n - 1] = 0;
+			var tempVec:Vector.<*> = sortVec, i:uint = mLen, t:*, j:uint = i;
+			var left:uint, right:uint = i;
+			while (j--) {
+				if (j == left) break;
+				t = vals[j];
+				t = name in t ? t[name] : t;
+				if (t === null) {
+					tempVec[left++] = null;
+				} else if (t === undefined) {
+					--right;
+					--i;
+					if (i != right) {
+						tempVec[i] = tempVec[right];
+						tempVec[right] = undefined;
+					}
+				} else tempVec[--i] = t;
+			}
+			if (left == right) return this;
+			j = i = right;
+			while (j--) {
+				if (j == left) break;
+				t = tempVec[j];
+				if (t != t) {
+					--right;
+					--i;
+					if (i != right) {
+						tempVec[i] = tempVec[right];
+						tempVec[right] = NaN;
+					}
+				} else --i;
+			}
+			if (uint(right - 1) <= left) return this;
+			quickSortOn(tempVec, vals, left, right);
+			if (options & DESCENDING) {
+				prev[starti = next[endi = 0] = --n] = 0;
+				while (n--) next[prev[n] = n + 1] = n;
+			} else {
+				next[endi = prev[starti = 0] = --n] = 0;
+				while (--n) prev[next[n] = n + 1] = n;
+			}
 			return this;
 		}
 		/**
@@ -524,7 +802,7 @@ package skyboy.collections {
 				// TODO: when index is out of range, and value is not null, expand DenseMap and set element
 				return value;
 			}
-			if ((a = curIx - (curIx = i)) > -17 && a < 17) {
+			if ((a = curIx - (curIx = i)) > -17 && (a < 17 || a > 4294967279)) {
 				if (a > 17) {
 					if (a == 4294967295) { // -1
 						a = next[curi];
@@ -595,243 +873,128 @@ package skyboy.collections {
 					}
 				}
 			} else if (hLen > i) {
-				if (i < qLen) {
-					a = starti;
-					while (i--) {
-						if (i == 0) {
-							a = next[a];
-							break;
-						} else if (i == 1) {
-							a = next[next[a]];
-							break;
-						} else if (i == 2) {
-							a = next[next[next[a]]];
-							break;
-						} else if (i == 3) {
-							a = next[next[next[next[a]]]];
-							break;
-						} else if (i == 4) {
-							a = next[next[next[next[next[a]]]]];
-							break;
-						} else if (i == 5) {
-							a = next[next[next[next[next[next[a]]]]]];
-							break;
-						} else if (i == 6) {
-							a = next[next[next[next[next[next[next[a]]]]]]];
-							break;
-						} else if (i == 7) {
-							a = next[next[next[next[next[next[next[next[a]]]]]]]];
-							break;
-						} else if (i == 8) {
-							a = next[next[next[next[next[next[next[next[next[a]]]]]]]]];
-							break;
-						} else if (i == 9) {
-							a = next[next[next[next[next[next[next[next[next[next[a]]]]]]]]]];
-							break;
-						} else if (i == 10) {
-							a = next[next[next[next[next[next[next[next[next[next[next[a]]]]]]]]]]];
-							break;
-						} else if (i == 11) {
-							a = next[next[next[next[next[next[next[next[next[next[next[next[a]]]]]]]]]]]];
-							break;
-						} else if (i == 12) {
-							a = next[next[next[next[next[next[next[next[next[next[next[next[next[a]]]]]]]]]]]]];
-							break;
-						} else if (i == 13) {
-							a = next[next[next[next[next[next[next[next[next[next[next[next[next[next[a]]]]]]]]]]]]]];
-							break;
-						} else if (i == 14) {
-							a = next[next[next[next[next[next[next[next[next[next[next[next[next[next[next[a]]]]]]]]]]]]]]];
-							break;
-						} else if (i == 15) {
-							a = next[next[next[next[next[next[next[next[next[next[next[next[next[next[next[next[a]]]]]]]]]]]]]]]];
-							break;
-							//i -= 14;
-						} else {
-							a = next[next[next[next[next[next[next[next[next[next[next[next[next[next[next[next[next[a]]]]]]]]]]]]]]]]];
-							--i;--i;--i;--i;--i;--i;--i;--i;--i;--i;--i;--i;--i;--i;--i;--i;
-						}
-					}
-				} else {
-					i = hLen - i;
-					a = midi;
-					while (i--) {
-						if (i == 0) {
-							a = prev[a];
-							break;
-						} else if (i == 1) {
-							a = prev[prev[a]];
-							break;
-						} else if (i == 2) {
-							a = prev[prev[prev[a]]];
-							break;
-						} else if (i == 3) {
-							a = prev[prev[prev[prev[a]]]];
-							break;
-						} else if (i == 4) {
-							a = prev[prev[prev[prev[prev[a]]]]];
-							break;
-						} else if (i == 5) {
-							a = prev[prev[prev[prev[prev[prev[a]]]]]];
-							break;
-						} else if (i == 6) {
-							a = prev[prev[prev[prev[prev[prev[prev[a]]]]]]];
-							break;
-						} else if (i == 7) {
-							a = prev[prev[prev[prev[prev[prev[prev[prev[a]]]]]]]];
-							break;
-						} else if (i == 8) {
-							a = prev[prev[prev[prev[prev[prev[prev[prev[prev[a]]]]]]]]];
-							break;
-						} else if (i == 9) {
-							a = prev[prev[prev[prev[prev[prev[prev[prev[prev[prev[a]]]]]]]]]];
-							break;
-						} else if (i == 10) {
-							a = prev[prev[prev[prev[prev[prev[prev[prev[prev[prev[prev[a]]]]]]]]]]];
-							break;
-						} else if (i == 11) {
-							a = prev[prev[prev[prev[prev[prev[prev[prev[prev[prev[prev[prev[a]]]]]]]]]]]];
-							break;
-						} else if (i == 12) {
-							a = prev[prev[prev[prev[prev[prev[prev[prev[prev[prev[prev[prev[prev[a]]]]]]]]]]]]];
-							break;
-						} else if (i == 13) {
-							a = prev[prev[prev[prev[prev[prev[prev[prev[prev[prev[prev[prev[prev[prev[a]]]]]]]]]]]]]];
-							break;
-						} else if (i == 14) {
-							a = prev[prev[prev[prev[prev[prev[prev[prev[prev[prev[prev[prev[prev[prev[prev[a]]]]]]]]]]]]]]];
-							break;
-						} else {
-							a = prev[prev[prev[prev[prev[prev[prev[prev[prev[prev[prev[prev[prev[prev[prev[prev[a]]]]]]]]]]]]]]]];
-							--i;--i;--i;--i;--i;--i;--i;--i;--i;--i;--i;--i;--i;--i;--i;
-							//i -= 14;
-						}
+				a = starti;
+				while (i--) {
+					if (i == 0) {
+						a = next[a];
+						break;
+					} else if (i == 1) {
+						a = next[next[a]];
+						break;
+					} else if (i == 2) {
+						a = next[next[next[a]]];
+						break;
+					} else if (i == 3) {
+						a = next[next[next[next[a]]]];
+						break;
+					} else if (i == 4) {
+						a = next[next[next[next[next[a]]]]];
+						break;
+					} else if (i == 5) {
+						a = next[next[next[next[next[next[a]]]]]];
+						break;
+					} else if (i == 6) {
+						a = next[next[next[next[next[next[next[a]]]]]]];
+						break;
+					} else if (i == 7) {
+						a = next[next[next[next[next[next[next[next[a]]]]]]]];
+						break;
+					} else if (i == 8) {
+						a = next[next[next[next[next[next[next[next[next[a]]]]]]]]];
+						break;
+					} else if (i == 9) {
+						a = next[next[next[next[next[next[next[next[next[next[a]]]]]]]]]];
+						break;
+					} else if (i == 10) {
+						a = next[next[next[next[next[next[next[next[next[next[next[a]]]]]]]]]]];
+						break;
+					} else if (i == 11) {
+						a = next[next[next[next[next[next[next[next[next[next[next[next[a]]]]]]]]]]]];
+						break;
+					} else if (i == 12) {
+						a = next[next[next[next[next[next[next[next[next[next[next[next[next[a]]]]]]]]]]]]];
+						break;
+					} else if (i == 13) {
+						a = next[next[next[next[next[next[next[next[next[next[next[next[next[next[a]]]]]]]]]]]]]];
+						break;
+					} else if (i == 14) {
+						a = next[next[next[next[next[next[next[next[next[next[next[next[next[next[next[a]]]]]]]]]]]]]]];
+						break;
+					} else if (i == 15) {
+						a = next[next[next[next[next[next[next[next[next[next[next[next[next[next[next[next[a]]]]]]]]]]]]]]]];
+						break;
+						//i -= 14;
+					} else {
+						a = next[next[next[next[next[next[next[next[next[next[next[next[next[next[next[next[next[a]]]]]]]]]]]]]]]]];
+						--i;--i;--i;--i;--i;--i;--i;--i;--i;--i;--i;--i;--i;--i;--i;--i;
 					}
 				}
 			} else {
-				if (i > q3Len) {
-					i = _length - i;
-					a = endi;
-					while (--i) {
-						if (i == 1) {
-							a = prev[a];
-							break;
-						} else if (i == 2) {
-							a = prev[prev[a]];
-							break;
-						} else if (i == 3) {
-							a = prev[prev[prev[a]]];
-							break;
-						} else if (i == 4) {
-							a = prev[prev[prev[prev[a]]]];
-							break;
-						} else if (i == 5) {
-							a = prev[prev[prev[prev[prev[a]]]]];
-							break;
-						} else if (i == 6) {
-							a = prev[prev[prev[prev[prev[prev[a]]]]]];
-							break;
-						} else if (i == 7) {
-							a = prev[prev[prev[prev[prev[prev[prev[a]]]]]]];
-							break;
-						} else if (i == 8) {
-							a = prev[prev[prev[prev[prev[prev[prev[prev[a]]]]]]]];
-							break;
-						} else if (i == 9) {
-							a = prev[prev[prev[prev[prev[prev[prev[prev[prev[a]]]]]]]]];
-							break;
-						} else if (i == 10) {
-							a = prev[prev[prev[prev[prev[prev[prev[prev[prev[prev[a]]]]]]]]]];
-							break;
-						} else if (i == 11) {
-							a = prev[prev[prev[prev[prev[prev[prev[prev[prev[prev[prev[a]]]]]]]]]]];
-							break;
-						} else if (i == 12) {
-							a = prev[prev[prev[prev[prev[prev[prev[prev[prev[prev[prev[prev[a]]]]]]]]]]]];
-							break;
-						} else if (i == 13) {
-							a = prev[prev[prev[prev[prev[prev[prev[prev[prev[prev[prev[prev[prev[a]]]]]]]]]]]]];
-							break;
-						} else if (i == 14) {
-							a = prev[prev[prev[prev[prev[prev[prev[prev[prev[prev[prev[prev[prev[prev[a]]]]]]]]]]]]]];
-							break;
-						} else if (i == 15) {
-							a = prev[prev[prev[prev[prev[prev[prev[prev[prev[prev[prev[prev[prev[prev[prev[a]]]]]]]]]]]]]]];
-							break;
-						} else {
-							a = prev[prev[prev[prev[prev[prev[prev[prev[prev[prev[prev[prev[prev[prev[prev[prev[a]]]]]]]]]]]]]]]];
-							--i;--i;--i;--i;--i;--i;--i;--i;--i;--i;--i;--i;--i;--i;--i;
-						}
-					}
-				} else {
-					i = (qLen - (q3Len - i)) - (hLen & 1);
-					a = midi;
-					while (i--) {
-						if (i == 0) {
-							a = next[a];
-							break;
-						} else if (i == 1) {
-							a = next[next[a]];
-							break;
-						} else if (i == 2) {
-							a = next[next[next[a]]];
-							break;
-						} else if (i == 3) {
-							a = next[next[next[next[a]]]];
-							break;
-						} else if (i == 4) {
-							a = next[next[next[next[next[a]]]]];
-							break;
-						} else if (i == 5) {
-							a = next[next[next[next[next[next[a]]]]]];
-							break;
-						} else if (i == 6) {
-							a = next[next[next[next[next[next[next[a]]]]]]];
-							break;
-						} else if (i == 7) {
-							a = next[next[next[next[next[next[next[next[a]]]]]]]];
-							break;
-						} else if (i == 8) {
-							a = next[next[next[next[next[next[next[next[next[a]]]]]]]]];
-							break;
-						} else if (i == 9) {
-							a = next[next[next[next[next[next[next[next[next[next[a]]]]]]]]]];
-							break;
-						} else if (i == 10) {
-							a = next[next[next[next[next[next[next[next[next[next[next[a]]]]]]]]]]];
-							break;
-						} else if (i == 11) {
-							a = next[next[next[next[next[next[next[next[next[next[next[next[a]]]]]]]]]]]];
-							break;
-						} else if (i == 12) {
-							a = next[next[next[next[next[next[next[next[next[next[next[next[next[a]]]]]]]]]]]]];
-							break;
-						} else if (i == 13) {
-							a = next[next[next[next[next[next[next[next[next[next[next[next[next[next[a]]]]]]]]]]]]]];
-							break;
-						} else if (i == 14) {
-							a = next[next[next[next[next[next[next[next[next[next[next[next[next[next[next[a]]]]]]]]]]]]]]];
-							break;
-						} else if (i == 15) {
-							a = next[next[next[next[next[next[next[next[next[next[next[next[next[next[next[next[a]]]]]]]]]]]]]]]];
-							break;
-							//i -= 14;
-						} else {
-							a = next[next[next[next[next[next[next[next[next[next[next[next[next[next[next[next[next[a]]]]]]]]]]]]]]]]];
-							--i;--i;--i;--i;--i;--i;--i;--i;--i;--i;--i;--i;--i;--i;--i;--i;
-						}
+				i = _length - i;
+				a = endi;
+				while (--i) {
+					if (i == 1) {
+						a = prev[a];
+						break;
+					} else if (i == 2) {
+						a = prev[prev[a]];
+						break;
+					} else if (i == 3) {
+						a = prev[prev[prev[a]]];
+						break;
+					} else if (i == 4) {
+						a = prev[prev[prev[prev[a]]]];
+						break;
+					} else if (i == 5) {
+						a = prev[prev[prev[prev[prev[a]]]]];
+						break;
+					} else if (i == 6) {
+						a = prev[prev[prev[prev[prev[prev[a]]]]]];
+						break;
+					} else if (i == 7) {
+						a = prev[prev[prev[prev[prev[prev[prev[a]]]]]]];
+						break;
+					} else if (i == 8) {
+						a = prev[prev[prev[prev[prev[prev[prev[prev[a]]]]]]]];
+						break;
+					} else if (i == 9) {
+						a = prev[prev[prev[prev[prev[prev[prev[prev[prev[a]]]]]]]]];
+						break;
+					} else if (i == 10) {
+						a = prev[prev[prev[prev[prev[prev[prev[prev[prev[prev[a]]]]]]]]]];
+						break;
+					} else if (i == 11) {
+						a = prev[prev[prev[prev[prev[prev[prev[prev[prev[prev[prev[a]]]]]]]]]]];
+						break;
+					} else if (i == 12) {
+						a = prev[prev[prev[prev[prev[prev[prev[prev[prev[prev[prev[prev[a]]]]]]]]]]]];
+						break;
+					} else if (i == 13) {
+						a = prev[prev[prev[prev[prev[prev[prev[prev[prev[prev[prev[prev[prev[a]]]]]]]]]]]]];
+						break;
+					} else if (i == 14) {
+						a = prev[prev[prev[prev[prev[prev[prev[prev[prev[prev[prev[prev[prev[prev[a]]]]]]]]]]]]]];
+						break;
+					} else if (i == 15) {
+						a = prev[prev[prev[prev[prev[prev[prev[prev[prev[prev[prev[prev[prev[prev[prev[a]]]]]]]]]]]]]]];
+						break;
+					} else {
+						a = prev[prev[prev[prev[prev[prev[prev[prev[prev[prev[prev[prev[prev[prev[prev[prev[a]]]]]]]]]]]]]]]];
+						--i;--i;--i;--i;--i;--i;--i;--i;--i;--i;--i;--i;--i;--i;--i;
 					}
 				}
 			}
+			curi = a;
 			if (value == null) {
-				return vals[curi = a];
+				return vals[a];
 			}
-			return vals[curi = a] = value;
+			vals[a] = value
+			return value;
 		}
 		private function indexAt(i:uint):uint {
 			if (i == curIx) return curi; // element caching to speed up processing
-			var a:uint, next:Vector.<uint> = this.next, prev:Vector.<uint> = this.prev;
-			if ((a = curIx - (curIx = i)) > -17 && a < 17) {
+			var next:Vector.<uint> = this.next, prev:Vector.<uint> = this.prev, a:uint;
+			if ((a = curIx - (curIx = i)) > -17 && (a < 17 || a > 4294967279)) {
 				if (a > 17) {
 					if (a == 4294967295) { // -1
 						a = next[curi];
@@ -902,241 +1065,122 @@ package skyboy.collections {
 					}
 				}
 			} else if (hLen > i) {
-				if (i < qLen) {
-					a = starti;
-					while (i--) {
-						if (i == 0) {
-							a = next[a];
-							break;
-						} else if (i == 1) {
-							a = next[next[a]];
-							break;
-						} else if (i == 2) {
-							a = next[next[next[a]]];
-							break;
-						} else if (i == 3) {
-							a = next[next[next[next[a]]]];
-							break;
-						} else if (i == 4) {
-							a = next[next[next[next[next[a]]]]];
-							break;
-						} else if (i == 5) {
-							a = next[next[next[next[next[next[a]]]]]];
-							break;
-						} else if (i == 6) {
-							a = next[next[next[next[next[next[next[a]]]]]]];
-							break;
-						} else if (i == 7) {
-							a = next[next[next[next[next[next[next[next[a]]]]]]]];
-							break;
-						} else if (i == 8) {
-							a = next[next[next[next[next[next[next[next[next[a]]]]]]]]];
-							break;
-						} else if (i == 9) {
-							a = next[next[next[next[next[next[next[next[next[next[a]]]]]]]]]];
-							break;
-						} else if (i == 10) {
-							a = next[next[next[next[next[next[next[next[next[next[next[a]]]]]]]]]]];
-							break;
-						} else if (i == 11) {
-							a = next[next[next[next[next[next[next[next[next[next[next[next[a]]]]]]]]]]]];
-							break;
-						} else if (i == 12) {
-							a = next[next[next[next[next[next[next[next[next[next[next[next[next[a]]]]]]]]]]]]];
-							break;
-						} else if (i == 13) {
-							a = next[next[next[next[next[next[next[next[next[next[next[next[next[next[a]]]]]]]]]]]]]];
-							break;
-						} else if (i == 14) {
-							a = next[next[next[next[next[next[next[next[next[next[next[next[next[next[next[a]]]]]]]]]]]]]]];
-							break;
-						} else if (i == 15) {
-							a = next[next[next[next[next[next[next[next[next[next[next[next[next[next[next[next[a]]]]]]]]]]]]]]]];
-							break;
-							//i -= 14;
-						} else {
-							a = next[next[next[next[next[next[next[next[next[next[next[next[next[next[next[next[next[a]]]]]]]]]]]]]]]]];
-							--i;--i;--i;--i;--i;--i;--i;--i;--i;--i;--i;--i;--i;--i;--i;--i;
-						}
-					}
-				} else {
-					i = hLen - i;
-					a = midi;
-					while (i--) {
-						if (i == 0) {
-							a = prev[a];
-							break;
-						} else if (i == 1) {
-							a = prev[prev[a]];
-							break;
-						} else if (i == 2) {
-							a = prev[prev[prev[a]]];
-							break;
-						} else if (i == 3) {
-							a = prev[prev[prev[prev[a]]]];
-							break;
-						} else if (i == 4) {
-							a = prev[prev[prev[prev[prev[a]]]]];
-							break;
-						} else if (i == 5) {
-							a = prev[prev[prev[prev[prev[prev[a]]]]]];
-							break;
-						} else if (i == 6) {
-							a = prev[prev[prev[prev[prev[prev[prev[a]]]]]]];
-							break;
-						} else if (i == 7) {
-							a = prev[prev[prev[prev[prev[prev[prev[prev[a]]]]]]]];
-							break;
-						} else if (i == 8) {
-							a = prev[prev[prev[prev[prev[prev[prev[prev[prev[a]]]]]]]]];
-							break;
-						} else if (i == 9) {
-							a = prev[prev[prev[prev[prev[prev[prev[prev[prev[prev[a]]]]]]]]]];
-							break;
-						} else if (i == 10) {
-							a = prev[prev[prev[prev[prev[prev[prev[prev[prev[prev[prev[a]]]]]]]]]]];
-							break;
-						} else if (i == 11) {
-							a = prev[prev[prev[prev[prev[prev[prev[prev[prev[prev[prev[prev[a]]]]]]]]]]]];
-							break;
-						} else if (i == 12) {
-							a = prev[prev[prev[prev[prev[prev[prev[prev[prev[prev[prev[prev[prev[a]]]]]]]]]]]]];
-							break;
-						} else if (i == 13) {
-							a = prev[prev[prev[prev[prev[prev[prev[prev[prev[prev[prev[prev[prev[prev[a]]]]]]]]]]]]]];
-							break;
-						} else if (i == 14) {
-							a = prev[prev[prev[prev[prev[prev[prev[prev[prev[prev[prev[prev[prev[prev[prev[a]]]]]]]]]]]]]]];
-							break;
-						} else {
-							a = prev[prev[prev[prev[prev[prev[prev[prev[prev[prev[prev[prev[prev[prev[prev[prev[a]]]]]]]]]]]]]]]];
-							--i;--i;--i;--i;--i;--i;--i;--i;--i;--i;--i;--i;--i;--i;--i;
-							//i -= 14;
-						}
+				a = starti;
+				while (i--) {
+					if (i == 0) {
+						a = next[a];
+						break;
+					} else if (i == 1) {
+						a = next[next[a]];
+						break;
+					} else if (i == 2) {
+						a = next[next[next[a]]];
+						break;
+					} else if (i == 3) {
+						a = next[next[next[next[a]]]];
+						break;
+					} else if (i == 4) {
+						a = next[next[next[next[next[a]]]]];
+						break;
+					} else if (i == 5) {
+						a = next[next[next[next[next[next[a]]]]]];
+						break;
+					} else if (i == 6) {
+						a = next[next[next[next[next[next[next[a]]]]]]];
+						break;
+					} else if (i == 7) {
+						a = next[next[next[next[next[next[next[next[a]]]]]]]];
+						break;
+					} else if (i == 8) {
+						a = next[next[next[next[next[next[next[next[next[a]]]]]]]]];
+						break;
+					} else if (i == 9) {
+						a = next[next[next[next[next[next[next[next[next[next[a]]]]]]]]]];
+						break;
+					} else if (i == 10) {
+						a = next[next[next[next[next[next[next[next[next[next[next[a]]]]]]]]]]];
+						break;
+					} else if (i == 11) {
+						a = next[next[next[next[next[next[next[next[next[next[next[next[a]]]]]]]]]]]];
+						break;
+					} else if (i == 12) {
+						a = next[next[next[next[next[next[next[next[next[next[next[next[next[a]]]]]]]]]]]]];
+						break;
+					} else if (i == 13) {
+						a = next[next[next[next[next[next[next[next[next[next[next[next[next[next[a]]]]]]]]]]]]]];
+						break;
+					} else if (i == 14) {
+						a = next[next[next[next[next[next[next[next[next[next[next[next[next[next[next[a]]]]]]]]]]]]]]];
+						break;
+					} else if (i == 15) {
+						a = next[next[next[next[next[next[next[next[next[next[next[next[next[next[next[next[a]]]]]]]]]]]]]]]];
+						break;
+						//i -= 14;
+					} else {
+						a = next[next[next[next[next[next[next[next[next[next[next[next[next[next[next[next[next[a]]]]]]]]]]]]]]]]];
+						--i;--i;--i;--i;--i;--i;--i;--i;--i;--i;--i;--i;--i;--i;--i;--i;
 					}
 				}
 			} else {
-				if (i > q3Len) {
-					i = _length - i;
-					a = endi;
-					while (--i) {
-						if (i == 1) {
-							a = prev[a];
-							break;
-						} else if (i == 2) {
-							a = prev[prev[a]];
-							break;
-						} else if (i == 3) {
-							a = prev[prev[prev[a]]];
-							break;
-						} else if (i == 4) {
-							a = prev[prev[prev[prev[a]]]];
-							break;
-						} else if (i == 5) {
-							a = prev[prev[prev[prev[prev[a]]]]];
-							break;
-						} else if (i == 6) {
-							a = prev[prev[prev[prev[prev[prev[a]]]]]];
-							break;
-						} else if (i == 7) {
-							a = prev[prev[prev[prev[prev[prev[prev[a]]]]]]];
-							break;
-						} else if (i == 8) {
-							a = prev[prev[prev[prev[prev[prev[prev[prev[a]]]]]]]];
-							break;
-						} else if (i == 9) {
-							a = prev[prev[prev[prev[prev[prev[prev[prev[prev[a]]]]]]]]];
-							break;
-						} else if (i == 10) {
-							a = prev[prev[prev[prev[prev[prev[prev[prev[prev[prev[a]]]]]]]]]];
-							break;
-						} else if (i == 11) {
-							a = prev[prev[prev[prev[prev[prev[prev[prev[prev[prev[prev[a]]]]]]]]]]];
-							break;
-						} else if (i == 12) {
-							a = prev[prev[prev[prev[prev[prev[prev[prev[prev[prev[prev[prev[a]]]]]]]]]]]];
-							break;
-						} else if (i == 13) {
-							a = prev[prev[prev[prev[prev[prev[prev[prev[prev[prev[prev[prev[prev[a]]]]]]]]]]]]];
-							break;
-						} else if (i == 14) {
-							a = prev[prev[prev[prev[prev[prev[prev[prev[prev[prev[prev[prev[prev[prev[a]]]]]]]]]]]]]];
-							break;
-						} else if (i == 15) {
-							a = prev[prev[prev[prev[prev[prev[prev[prev[prev[prev[prev[prev[prev[prev[prev[a]]]]]]]]]]]]]]];
-							break;
-						} else {
-							a = prev[prev[prev[prev[prev[prev[prev[prev[prev[prev[prev[prev[prev[prev[prev[prev[a]]]]]]]]]]]]]]]];
-							--i;--i;--i;--i;--i;--i;--i;--i;--i;--i;--i;--i;--i;--i;--i;
-						}
-					}
-				} else {
-					i = (qLen - (q3Len - i)) - (hLen & 1);
-					a = midi;
-					while (i--) {
-						if (i == 0) {
-							a = next[a];
-							break;
-						} else if (i == 1) {
-							a = next[next[a]];
-							break;
-						} else if (i == 2) {
-							a = next[next[next[a]]];
-							break;
-						} else if (i == 3) {
-							a = next[next[next[next[a]]]];
-							break;
-						} else if (i == 4) {
-							a = next[next[next[next[next[a]]]]];
-							break;
-						} else if (i == 5) {
-							a = next[next[next[next[next[next[a]]]]]];
-							break;
-						} else if (i == 6) {
-							a = next[next[next[next[next[next[next[a]]]]]]];
-							break;
-						} else if (i == 7) {
-							a = next[next[next[next[next[next[next[next[a]]]]]]]];
-							break;
-						} else if (i == 8) {
-							a = next[next[next[next[next[next[next[next[next[a]]]]]]]]];
-							break;
-						} else if (i == 9) {
-							a = next[next[next[next[next[next[next[next[next[next[a]]]]]]]]]];
-							break;
-						} else if (i == 10) {
-							a = next[next[next[next[next[next[next[next[next[next[next[a]]]]]]]]]]];
-							break;
-						} else if (i == 11) {
-							a = next[next[next[next[next[next[next[next[next[next[next[next[a]]]]]]]]]]]];
-							break;
-						} else if (i == 12) {
-							a = next[next[next[next[next[next[next[next[next[next[next[next[next[a]]]]]]]]]]]]];
-							break;
-						} else if (i == 13) {
-							a = next[next[next[next[next[next[next[next[next[next[next[next[next[next[a]]]]]]]]]]]]]];
-							break;
-						} else if (i == 14) {
-							a = next[next[next[next[next[next[next[next[next[next[next[next[next[next[next[a]]]]]]]]]]]]]]];
-							break;
-						} else if (i == 15) {
-							a = next[next[next[next[next[next[next[next[next[next[next[next[next[next[next[next[a]]]]]]]]]]]]]]]];
-							break;
-							//i -= 14;
-						} else {
-							a = next[next[next[next[next[next[next[next[next[next[next[next[next[next[next[next[next[a]]]]]]]]]]]]]]]]];
-							--i;--i;--i;--i;--i;--i;--i;--i;--i;--i;--i;--i;--i;--i;--i;--i;
-						}
+				i = _length - i;
+				a = endi;
+				while (--i) {
+					if (i == 1) {
+						a = prev[a];
+						break;
+					} else if (i == 2) {
+						a = prev[prev[a]];
+						break;
+					} else if (i == 3) {
+						a = prev[prev[prev[a]]];
+						break;
+					} else if (i == 4) {
+						a = prev[prev[prev[prev[a]]]];
+						break;
+					} else if (i == 5) {
+						a = prev[prev[prev[prev[prev[a]]]]];
+						break;
+					} else if (i == 6) {
+						a = prev[prev[prev[prev[prev[prev[a]]]]]];
+						break;
+					} else if (i == 7) {
+						a = prev[prev[prev[prev[prev[prev[prev[a]]]]]]];
+						break;
+					} else if (i == 8) {
+						a = prev[prev[prev[prev[prev[prev[prev[prev[a]]]]]]]];
+						break;
+					} else if (i == 9) {
+						a = prev[prev[prev[prev[prev[prev[prev[prev[prev[a]]]]]]]]];
+						break;
+					} else if (i == 10) {
+						a = prev[prev[prev[prev[prev[prev[prev[prev[prev[prev[a]]]]]]]]]];
+						break;
+					} else if (i == 11) {
+						a = prev[prev[prev[prev[prev[prev[prev[prev[prev[prev[prev[a]]]]]]]]]]];
+						break;
+					} else if (i == 12) {
+						a = prev[prev[prev[prev[prev[prev[prev[prev[prev[prev[prev[prev[a]]]]]]]]]]]];
+						break;
+					} else if (i == 13) {
+						a = prev[prev[prev[prev[prev[prev[prev[prev[prev[prev[prev[prev[prev[a]]]]]]]]]]]]];
+						break;
+					} else if (i == 14) {
+						a = prev[prev[prev[prev[prev[prev[prev[prev[prev[prev[prev[prev[prev[prev[a]]]]]]]]]]]]]];
+						break;
+					} else if (i == 15) {
+						a = prev[prev[prev[prev[prev[prev[prev[prev[prev[prev[prev[prev[prev[prev[prev[a]]]]]]]]]]]]]]];
+						break;
+					} else {
+						a = prev[prev[prev[prev[prev[prev[prev[prev[prev[prev[prev[prev[prev[prev[prev[prev[a]]]]]]]]]]]]]]]];
+						--i;--i;--i;--i;--i;--i;--i;--i;--i;--i;--i;--i;--i;--i;--i;
 					}
 				}
 			}
-			return curi = a;
+			curi = a;
+			return a;
 		}
 		public function concat(...values):DenseMap {
-			for each (var e:* in values) {
-				push(e);
-			}
-			return this;
+			return concatArray(values);
 		}
 		/**
 		 * concatArray
@@ -1145,40 +1189,38 @@ package skyboy.collections {
 		 * @return	DenseMap: Returns the DenseMap you called the method on.
 		 */
 		public function concatArray(...values):DenseMap {
-			var d:DenseMap, b:uint, c:Array, l:uint;
+			var b:uint, c:Array, d:uint = nulls.length, e:uint = d, l:uint;
 			for each(var a:* in values) {
 				if (a is DenseMap) {
-					if ((l = (c = a.toArray(hArray)).length)) do {
-						push(c[b++]);
-					} while(b < l);
+					if ((l = (c = a.toArray(hArray)).length)) {
+						if ((d = l - d) > 0) {
+							d *= 10;
+							vals.length += d;
+							next.length += d;
+							prev.length += d;
+							nulls.length += d;
+							b = mLen;
+							while (e < d) {
+								nulls[e] = b;
+								++b;
+								++e;
+							}
+							b = 0;
+						}
+						do {
+							push1(c[b++]);
+						} while (b < l);
+					}
 				} else if (a is Array || getQualifiedClassName(a).indexOf("AS3.vec:") === 0) {
-					if ((l = (c = a as Array).length)) do {
-						push(c[b++]);
+					if ((l = a.length)) do {
+						push1(a[b++]);
 					} while (b < l);
 				} else throw new TypeError(string.call(a) + " is not an Array type.");
 			}
 			return this;
 		}
-		private function concatPushHelper(value:*, c:uint = 0, DM:DenseMap = null):void {
-			if (nulls.length) {
-				c = nulls.pop();
-				vals[endi = prev[next[c] = starti] = next[prev[c] = endi] = c] = value;
-				if (hLen - (hLen = ++_length >> 1)) {
-					midi = next[midi];
-					q3Len = (qLen = hLen >> 1) * 3;
-				}
-				return;
-			}
-			++mLen;
-			c = (next.length = (prev.length = (vals.length = ++_length))) - 1;
-			next[endi = next[prev[c] = endi] = c] = starti;
-			vals[prev[starti] = c] = value;
-			if (hLen - (hLen = ++_length >> 1)) {
-				midi = next[midi];
-				q3Len = (qLen = hLen >> 1) * 3;
-			}
-		}
 		public function every(callback:Function, thisObject:Object = null):Boolean {
+			if (!_length) return false;
 			var a:uint = endi, e:uint = prev[a], i:uint;
 			if (thisObject != null) {
 				if (callback.call(thisObject, vals[a = next[a]], i++, this)) {
@@ -1194,6 +1236,7 @@ package skyboy.collections {
 			return false;
 		}
 		public function some(callback:Function, thisObject:Object = null):Boolean {
+			if (!_length) return false;
 			var a:uint = endi, e:uint = a, i:uint;
 			if (thisObject != null) {
 				if (callback.call(thisObject, vals[a = next[a]], i++, this)) return true;
@@ -1205,10 +1248,10 @@ package skyboy.collections {
 			return false;
 		}
 		public function filter(callback:Function, thisObject:Object = null):DenseMap {
-			var a:uint = starti, e:uint = endi, i:uint, ret:Array = hArray, ri:uint, t:*;
+			if (!_length) return new DenseMap;
+			var a:uint = starti, e:uint = endi, i:uint, retn:DenseMap = new DenseMap(_length), ri:uint, t:*;
+			var ret:Vector.<*> = retn.vals;
 			var next:Vector.<uint> = this.next, vals:Vector.<*> = this.vals;
-			ret.length = 0;
-			ret.length = _length;
 			if (thisObject != null) {
 				if (callback.call(thisObject, t = vals[a], i++, this)) ret[ri++] = t;
 				while (a != e) if (callback.call(thisObject, t = vals[a = next[a]], i++, this)) ret[ri++] = t;
@@ -1216,14 +1259,13 @@ package skyboy.collections {
 				if (callback(t = vals[a], i, this)) ret[ri++] = t;
 				while (a != e) if (callback(t = vals[a = next[a]], i++, this)) ret[ri++] = t;
 			}
-			ret.length = ri;
-			return new DenseMap(ret);
+			retn.length = ri;
+			return retn;
 		}
 		public function map(callback:Function, thisObject:Object = null):DenseMap {
-			var a:uint = starti, e:uint = endi, i:uint, ret:Array = hArray;
+			if (!_length) return new DenseMap;
+			var a:uint = starti, e:uint = endi, i:uint, retn:DenseMap = new DenseMap(_length), ret:Vector.<*> = retn.vals;
 			var next:Vector.<uint> = this.next, vals:Vector.<*> = this.vals;
-			ret.length = 0;
-			ret.length = _length;
 			if (thisObject != null) {
 				ret[i] = callback.call(thisObject, vals[a = next[a]], i++, this);
 				while (a != e) ret[i] = callback.call(thisObject, vals[a = next[a]], i++, this);
@@ -1231,23 +1273,30 @@ package skyboy.collections {
 				ret[i] = callback(vals[a = next[a]], i++, this);
 				while (a != e) ret[i] = callback(vals[a = next[a]], i++, this);
 			}
-			return new DenseMap(ret);
+			return retn;
 		}
 		public function forEach(callback:Function, thisObject:Object = null):void {
-			var a:uint = endi, e:uint = a, i:uint;
+			if (!_length) return;
+			var a:uint = endi, e:uint = a, i:uint, j:uint = _length;
 			if (thisObject != null) {
+				while (--j > 1) {
+					callback.call(thisObject, vals[a = next[a]], i++, this);
+					callback.call(thisObject, vals[a = next[a]], i++, this), --j;
+				}
 				callback.call(thisObject, vals[a = next[a]], i++, this);
-				while (a != e) callback.call(thisObject, vals[a = next[a]], i++, this);
-			} else {
-				callback(vals[a = next[a]], i++, this);
-				while (a != e) callback(vals[a = next[a]], i++, this);
+				return;
 			}
+			while (--j > 1) {
+				callback(vals[a = next[a]], i++, this);
+				callback(vals[a = next[a]], i++, this), --j;
+			}
+			callback(vals[a = next[a]], i++, this);
 		}
 		public function indexOf(obj:*, i:uint = 0):Number {
 			if (i >= _length) return -1;
 			var a:uint = i ? indexAt(i) : starti, I:uint = endi;
 			while (a != I) {
-				if (vals[a] === obj) return i; else ++i,a = next[a];
+				if (vals[a] === obj) return i; else ++i, a = next[a];
 			}
 			if (vals[a] === obj) return i;
 			return -1;
@@ -1264,7 +1313,7 @@ package skyboy.collections {
 		/**
 		 * toArray
 		 * Returns an array containing the values of the DenseMap
-		 * @param	Array: arr: An Arrray to fill instead of creating a new one (null)
+		 * @param	Array: arr: An Arrray to fill instead of creating a new one (def: null)
 		 * @return	Array: An Array containing the values of the DenseMap
 		 */
 		public function toArray(arr:Array = null):Array {
@@ -1287,15 +1336,18 @@ package skyboy.collections {
 			}
 		}
 		public function slice(start:uint = 0, end:uint = uint.MAX_VALUE):DenseMap {
-			if (end > _length) if (start) end = _length; else return new DenseMap(toArray(hArray));
-			if (end <= start || start >= _length) return new DenseMap;
-			var ret:Array = hArray, a:uint = prev[start == (ret.length = 0) ? starti : indexAt(start)];
-			end -= start;
+			if (end > _length) if (start) end = _length; else return DenseMap.fromVector(vals);
+			if (end < start || start >= _length) return new DenseMap;
+			var b:Vector.<*>, a:uint = prev[start == 0 ? starti : indexAt(start)];
+			end -= start - 1;
 			start = 0;
+			var ret:DenseMap = new DenseMap(end);
+			b = ret.vals;
 			do {
-				ret[start++] = vals[a = next[a]];
+				a = next[a];
+				b[start++] = vals[a];
 			} while (start != end);
-			return new DenseMap(ret);
+			return ret;
 		}
 		/**
 		 * snip
@@ -1306,20 +1358,13 @@ package skyboy.collections {
 		public function snip(start:uint, end:uint):void {
 			if (end > _length) end = _length;
 			if (end <= start || start >= _length) return;
-			var b:uint = end - start, i:uint = b, l:uint = start = prev[start == 0 ? starti : indexAt(start)], p:Boolean;
+			var b:uint = end - start, i:uint = b, l:uint = start = prev[start == 0 ? starti : indexAt(start)];
 			while (i--) {
 				nulls.push(l = next[l]);
-				if (!p) if(l == midi) p = true;
 			}
 			prev[next[start] = next[l]] = start;
-			if (p) midi = next[l];
-			if ((end = hLen - (hLen = (_length -= b) >> 1))) {
-				start = prev[midi];
-				while (--end) start = prev[start];
-				midi = start;
-				q3Len = (qLen = hLen >> 1) * 3;
-			}
-			// TODO: check/fix snip and midi adjustment
+			_length -= b;
+			hLen = _length >> 1
 		}
 		public function inject(start:uint, ...values):DenseMap {
 			if (start >= _length) { if (start == _length) return concatArray(values); return this; };
@@ -1328,13 +1373,14 @@ package skyboy.collections {
 				vals[start = next[prev[i = nulls.pop()] = start] = i] = values[count++];
 			}
 			if (count < l) {
-				vals.length = next.length = prev.length += l - count;
+				sortVec.length = vals.length = next.length = prev.length += l - count;
 				while (count < l) {
 					vals[start = next[prev[i = mLen++] = start] = i] = values[count++];
 				}
 			}
 			_length += l;
 			prev[end] = start;
+			hLen = _length >> 1
 			// TODO: finish inject
 			return this;
 		}
@@ -1382,6 +1428,7 @@ package skyboy.collections {
 				dirty = false;
 			}
 		}
+		
 	}
 }
 
