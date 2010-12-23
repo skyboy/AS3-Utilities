@@ -56,7 +56,7 @@ package skyboy.collections {
 	 * ...
 	 * @author skyboy
 	 */
-	public final class DenseMap {
+	final public class DenseMap {
 		public static const NUMERIC:uint = Array.NUMERIC;
 		public static const DESCENDING:uint = Array.DESCENDING;
 		public static const CASEINSENSITIVE:uint = Array.CASEINSENSITIVE;
@@ -66,9 +66,9 @@ package skyboy.collections {
 		private const nulls:Vector.<uint> = new Vector.<uint>();
 		private const sortVec:Vector.<*> = new Vector.<*>();
 		public const vals:Vector.<*> = new Vector.<*>();
-		public var prev:Vector.<uint> = new Vector.<uint>(), next:Vector.<uint> = new Vector.<uint>();
-		public var starti:uint, endi:uint, curi:uint, curIx:uint;
-		public var mLen:uint, _length:uint, hLen:uint;
+		private var prev:Vector.<uint> = new Vector.<uint>(), next:Vector.<uint> = new Vector.<uint>();
+		private var starti:uint, endi:uint, curi:uint, curIx:uint;
+		private var mLen:uint, _length:uint, hLen:uint;
 		private var hArray:Array, dirty:Boolean;
 		public function get length():uint {
 			return _length;
@@ -105,7 +105,8 @@ package skyboy.collections {
 				if (len == 0) {
 					i = nulls.length = mLen;
 					while (i--) {
-						vals[nulls[i] = i] = null;
+						nulls[i] = i;
+						vals[i] = null;
 					}
 					curi = curIx = hLen = starti = endi = _length = prev[0] = next[0] = 0;
 					dirty = false;
@@ -298,7 +299,7 @@ package skyboy.collections {
 			var c:uint;
 			if (nulls.length) {
 				c = nulls.pop();
-				next[c] = starti
+				next[c] = starti;
 				prev[c] = endi;
 				prev[starti] = c
 				next[endi] = c
@@ -464,13 +465,12 @@ package skyboy.collections {
 					do {
 						do {
 							++left;
-							if (pivotPoint > input[left]) {
-								t = input[left];
+							if (input[left] < pivotPoint) {
+								pivotPoint = input[left];
 								do {
 									input[left--] = input[left];
-								} while (left > i && t < input[left]);
-								input[left] = t;
-								pivotPoint = t;
+								} while (left > i && pivotPoint < input[left]);
+								input[left] = pivotPoint;
 							}
 						} while (left < right);
 						++i;
@@ -479,7 +479,7 @@ package skyboy.collections {
 					} while (i < right);
 					return;
 				}
-				while (left <= right) {
+				while (left < right) {
 					if (input[right] > pivotPoint) do {
 						--right;
 					} while (input[right] > pivotPoint);
@@ -491,11 +491,12 @@ package skyboy.collections {
 						input[left] = input[right];
 						input[right] = t;
 						++left, --right;
-					} else break;
+					}
 				}
 				if (right) {
 					if (left == right) {
-						++left, --right;
+						if (input[left] < pivotPoint) ++left;
+						else if (input[right] > pivotPoint) --right;
 					}
 					if (i < right) {
 						quickSort(input, i, right, d + 1);
@@ -506,71 +507,79 @@ package skyboy.collections {
 				right = j;
 				pivotPoint = input[(right + left) >>> 1];
 				size = right - left;
+				++d;
 			} while (true);
 		}
-		final private function quickSortLeg(input:Vector.<*>, left:uint, right:uint, d:uint = 0):void {
-			var j:uint = right >= input.length ? right = input.length - 1 : right;
-			if (left >= right) return;
-			var i:uint = left;
-			var size:uint = right - left;
-			var pivotPoint:String = String(input[(right + left) >>> 1]), t:*;
-			do {
-				if (size < 9) {
-					pivotPoint = String(input[left]);
-					do {
-						do {
-							++left;
-							if (pivotPoint > String(input[left])) {
-								t = input[left];
-								pivotPoint = String(t);
-								do {
-									input[left--] = input[left];
-								} while (left > i && pivotPoint < String(input[left]));
-								input[left] = t;
-							}
-						} while (left < right);
-						++i;
-						left = i;
-						pivotPoint = String(input[left]);
-					} while (i < right);
-					return;
-				}
-				while (left <= right) {
-					if (String(input[right]) > pivotPoint) do {
-						--right;
-					} while (String(input[right]) > pivotPoint);
-					if (String(input[left]) < pivotPoint) do {
-						++left;
-					} while (String(input[left]) < pivotPoint);
-					if (left < right) {
-						t = input[left];
-						input[left] = input[right];
-						input[right] = t;
-						++left, --right;
-					} else break;
-				}
-				if (right) {
-					if (left == right) {
-						++left, --right;
-					}
-					if (i < right) {
-						quickSortLeg(input, i, right, d + 1);
-					}
-				} else if (!left) left = 1;
-				if (j <= left) return;
-				i = left;
-				right = j;
-				pivotPoint = String(input[(right + left) >>> 1]);
-				size = right - left;
-			} while (true);
-		}
-		final private function quickSortC(input:Vector.<*>, callback:Function, left:uint, right:uint, d:uint = 0):void {
+		private function quickSortOn(input:Vector.<*> , sInput:Vector.<*> , left:int, right:int, d:uint = 0):void {
 			var j:uint = right >= input.length ? right = input.length - 1 : right;
 			if (left >= right) return;
 			var i:uint = left;
 			var size:uint = right - left;
 			var pivotPoint:* = input[(right + left) >>> 1], t:*;
-			//if (callback(pivotPoint, pivotPoint) != 0) throw new Error("Callback Error: Callback does not sort correctly.");
+			do {
+				if (size < 9) {
+					do {
+						pivotPoint = input[left];
+						do {
+							++left;
+							if (pivotPoint > input[left]) {
+								pivotPoint = input[left];
+								t = sInput[left];
+								do {
+									input[left] = input[left - 1];
+									sInput[left] = sInput[--left];
+								} while (left > i && pivotPoint < input[left]);
+								input[left] = pivotPoint;
+								sInput[left] = t;
+							}
+						} while (left < right);
+						++i;
+						left = i;
+					} while (i < right);
+					return;
+				}
+				while (left < right) {
+					if (input[right] > pivotPoint) do {
+						--right;
+					} while (input[right] > pivotPoint);
+					if (input[left] < pivotPoint) do {
+						++left;
+					} while (input[left] < pivotPoint);
+					if (left < right) {
+						t = input[left];
+						input[left] = input[right];
+						input[right] = t;
+						t = sInput[left];
+						sInput[left] = sInput[right];
+						sInput[right] = t;
+						++left, --right;
+					}
+				}
+				if (right) {
+					if (left == right) {
+						if (input[right] > pivotPoint) --right;
+						else if (input[left] < pivotPoint) ++left;
+						else ++left, --right;
+					}
+					if (i < right) {
+						quickSortOn(input, sInput, i, right, d + 1);
+					}
+				} else if (!left) left = 1;
+				if (j <= left) return;
+				i = left;
+				right = j;
+				pivotPoint = input[(right + left) >>> 1];
+				size = right - left;
+				++d;
+			} while (true);
+		}
+		private function quickSortC(input:Vector.<*>, callback:Function, left:uint, right:uint, d:uint = 0):void {
+			var j:uint = right >= input.length ? right = input.length - 1 : right;
+			if (left >= right) return;
+			var i:uint = left;
+			var size:uint = right - left;
+			var pivotPoint:* = input[(right + left) >>> 1], t:*;
+			if (callback(pivotPoint, pivotPoint) != 0) throw new Error("Callback Error: Callback does not sort correctly.");
 			do {
 				if (size < 9) {
 					do {
@@ -581,7 +590,7 @@ package skyboy.collections {
 								t = input[left];
 								do {
 									input[left--] = input[left];
-								} while (left > i && callback(input[left], t) < 0);
+								} while (left > i && callback(t, input[left]) < 0);
 								input[left] = t;
 								pivotPoint = t;
 							}
@@ -622,6 +631,7 @@ package skyboy.collections {
 				right = j;
 				pivotPoint = input[(right + left) >>> 1];
 				size = right - left;
+				++d;
 			} while (true);
 		}
 		public function sort(callback:* = null, options:uint = 0):DenseMap {
@@ -635,39 +645,47 @@ package skyboy.collections {
 				var q:uint, left:uint, right:uint = mLen;
 				var t:*;
 				while (q != right) {
-					if (input[q] === undefined) {
+					t = input[q]
+					if (t === undefined) {
 						--right;
 						input[q] = input[right];
 						input[right] = undefined;
+					} else if (t === null) {
+						input[q] = input[left];
+						input[left] = null;
+						++left;
+						++q;
 					} else ++q;
 				}
-				q = right - 1;
-				while (q) {
-					t = input[q];
-					if (t != t) {
-						--right;
-						input[q] = input[right];
-						input[right] = NaN;
-					} else --q;
-				}
-				if (right) {
-					--right;
-					if (right){
-						q = right;
-						while (q > left) {
-							if (input[q] === null) {
-								input[q] = input[left];
-								input[left] = null;
-								++left;
-							} else --q;
-						}
+				if (right > left) {
+					q = left;
+					while (q < right) {
+						t = input[q];
+						if (t != t) {
+							--right;
+							input[q] = input[right];
+							input[right] = NaN;
+						} else ++q;
+					}
+					if (--right) {
 						if (uint(right - 1) > left) {
 							if (callback is Number) options = callback;
 							if (options & NUMERIC) {
 								quickSort(input, left, right);
 							} else {
-								quickSortLeg(input, left, right);
+								var tempVec:Vector.<*> = sortVec;
+								q = right;
+								if (options & CASEINSENSITIVE) {
+									tempVec[q] = String(input[q]).toLowerCase();
+									while (q-- > left) tempVec[q] = String(input[q]).toLowerCase();
+								} else {
+									tempVec[q] = String(input[q]);
+									while (q-- > left) tempVec[q] = String(input[q]);
+								}
+								quickSortOn(tempVec, input, left, right);
 							}
+							// TODO: indexed array/densemap return.
+							// TODO: unique sort?
 						}
 					}
 				}
@@ -681,103 +699,65 @@ package skyboy.collections {
 			}
 			return this;
 		}
-		final private function quickSortOn(input:Vector.<*>, sInput:Vector.<*>, left:int, right:int, d:uint = 0):void {
-			var j:uint = right >= input.length ? right = input.length - 1 : right;
-			if (left >= right) return;
-			var i:uint = left;
-			var size:uint = right - left;
-			var pivotPoint:* = input[(right + left) >>> 1], t:*;
-			do {
-				if (size < 9) {
-					do {
-						pivotPoint = input[left];
-						do {
-							++left;
-							if (pivotPoint > input[left]) {
-								pivotPoint = input[left];
-								t = sInput[left];
-								do {
-									input[left] = input[left - 1];
-									sInput[left--] = sInput[left];
-								} while (left > i && pivotPoint < input[left]);
-								input[left] = pivotPoint;
-								sInput[left] = t;
-							}
-						} while (left < right);
-						++i;
-						left = i;
-					} while (i < right);
-					return;
-				}
-				while (left <= right) {
-					if (input[right] > pivotPoint) do {
-						--right;
-					} while (input[right] > pivotPoint);
-					if (input[left] < pivotPoint) do {
-						++left;
-					} while (input[left] < pivotPoint);
-					if (left < right) {
-						t = input[left];
-						input[left] = input[right];
-						input[right] = t;
-						t = sInput[left];
-						sInput[left] = sInput[right];
-						sInput[right] = t;
-						++left, --right;
-					} else break;
-				}
-				if (right) {
-					if (left == right) {
-						++left, --right;
-					}
-					if (i < right) {
-						quickSortOn(input, sInput, i, right, d + 1);
-					}
-				} else if (!left) left = 1;
-				if (j <= left) return;
-				i = left;
-				right = j;
-				pivotPoint = input[(right + left) >>> 1];
-				size = right - left;
-			} while (true);
-		}
 		public function sortOn(name:String, options:uint = 0):DenseMap {
 			var n:uint = _length;
 			if (n < 2) return this;
 			if (dirty) flush();
+			var input:Vector.<*> = vals;
 			var tempVec:Vector.<*> = sortVec, i:uint = mLen, t:*, j:uint = i;
 			var left:uint, right:uint = i;
 			while (j--) {
-				if (j == left) break;
-				t = vals[j];
+				t = input[j];
 				t = name in t ? t[name] : t;
 				if (t === null) {
+					t = input[j];
+					input[j] = input[left];
+					input[left] = t;
 					tempVec[left++] = null;
+					++j;
 				} else if (t === undefined) {
-					--right;
-					--i;
-					if (i != right) {
+					if (--i != --right) {
 						tempVec[i] = tempVec[right];
 						tempVec[right] = undefined;
+						t = input[right];
+						input[right] = input[j];
+						input[j] = t;
 					}
 				} else tempVec[--i] = t;
-			}
-			if (left == right) return this;
-			j = i = right;
-			while (j--) {
 				if (j == left) break;
-				t = tempVec[j];
-				if (t != t) {
-					--right;
-					--i;
-					if (i != right) {
-						tempVec[i] = tempVec[right];
-						tempVec[right] = NaN;
-					}
-				} else --i;
 			}
-			if (uint(right - 1) <= left) return this;
-			quickSortOn(tempVec, vals, left, right);
+			if (right > left) {
+				j = right;
+				while (--j > left) {
+					t = tempVec[j];
+					if (t != t) {
+						if (j != --right) {
+							tempVec[j] = tempVec[right];
+							tempVec[right] = NaN;
+							t = input[right];
+							input[right] = input[j];
+							input[j] = t;
+						}
+					}
+				}
+				if (--right) {
+					if (uint(right - 1) > left) {
+						if (!(options & NUMERIC)) {
+							i = right;
+							if (options & CASEINSENSITIVE) {
+								tempVec[i] = String(tempVec[i]).toUpperCase();
+								while (i-- > left) tempVec[i] = String(tempVec[i]).toUpperCase();
+							} else {
+								tempVec[i] = String(tempVec[i]);
+								while (i-- > left) tempVec[i] = String(tempVec[i]);
+							}
+						}
+						quickSortOn(tempVec, input, left, right);
+					}
+				}
+			}
+			// TODO: indexed sortOn array/densemap return.
+			// TODO: unique sortOn?
 			if (options & DESCENDING) {
 				prev[starti = next[endi = 0] = --n] = 0;
 				while (n--) next[prev[n] = n + 1] = n;
@@ -1180,7 +1160,7 @@ package skyboy.collections {
 			return a;
 		}
 		public function concat(...values):DenseMap {
-			return concatArray(values);
+			return concatArray(values); // TODO: merge concat and concatArray, delete concatArray
 		}
 		/**
 		 * concatArray
@@ -1194,19 +1174,20 @@ package skyboy.collections {
 				if (a is DenseMap) {
 					if ((l = (c = a.toArray(hArray)).length)) {
 						if ((d = l - d) > 0) {
-							d *= 10;
 							vals.length += d;
 							next.length += d;
 							prev.length += d;
+							sortVec.length += d;
 							nulls.length += d;
 							b = mLen;
+							mLen += d;
 							while (e < d) {
 								nulls[e] = b;
 								++b;
 								++e;
 							}
 							b = 0;
-						}
+						} // TODO: condense concatArray, inline push calls
 						do {
 							push1(c[b++]);
 						} while (b < l);
@@ -1335,6 +1316,7 @@ package skyboy.collections {
 				return new Array;
 			}
 		}
+		// TODO: toVector function
 		public function slice(start:uint = 0, end:uint = uint.MAX_VALUE):DenseMap {
 			if (end > _length) if (start) end = _length; else return DenseMap.fromVector(vals);
 			if (end < start || start >= _length) return new DenseMap;
@@ -1365,6 +1347,7 @@ package skyboy.collections {
 			prev[next[start] = next[l]] = start;
 			_length -= b;
 			hLen = _length >> 1
+			// TODO: verify snip
 		}
 		public function inject(start:uint, ...values):DenseMap {
 			if (start >= _length) { if (start == _length) return concatArray(values); return this; };
@@ -1384,6 +1367,7 @@ package skyboy.collections {
 			// TODO: finish inject
 			return this;
 		}
+		// TODO: inject1 function
 		public function splice(start:uint, count:uint, ...values):DenseMap {
 			// TODO: create splice function
 			return this;
@@ -1431,6 +1415,18 @@ package skyboy.collections {
 		
 	}
 }
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
