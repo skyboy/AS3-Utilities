@@ -61,7 +61,7 @@ package skyboy.collections {
 		public static const DESCENDING:uint = Array.DESCENDING;
 		public static const CASEINSENSITIVE:uint = Array.CASEINSENSITIVE;
 		public static const UNIQUESORT:uint = Array.UNIQUESORT;
-		public static const RETURNINDEXEDARRAY:uint = Array.RETURNINDEXEDARRAY;
+		public static const RETURNINDEXEDDENSEMAP:uint = Array.RETURNINDEXEDARRAY;
 		private static const string:Function = (Class as Object).toString;
 		private const nulls:Vector.<uint> = new Vector.<uint>();
 		private const sortVec:Vector.<*> = new Vector.<*>();
@@ -454,9 +454,9 @@ package skyboy.collections {
 			return ret + vals[e];
 		}
 		private function quickSort(input:Vector.<*>, left:uint, right:uint, d:uint = 0):void {
-			var j:uint = right >= input.length ? right = input.length - 1 : right;
+			if (right >= input.length) right = input.length - 1;
 			if (left >= right) return;
-			var i:uint = left;
+			var j:uint = right, i:uint = left;
 			var size:uint = right - left;
 			var pivotPoint:* = input[(right + left) >>> 1], t:*;
 			do {
@@ -467,7 +467,7 @@ package skyboy.collections {
 							++left;
 							if (input[left] < pivotPoint) {
 								pivotPoint = input[left];
-								do {
+								do { // this section can be improved.
 									input[left--] = input[left];
 								} while (left > i && pivotPoint < input[left]);
 								input[left] = pivotPoint;
@@ -480,12 +480,8 @@ package skyboy.collections {
 					return;
 				}
 				while (left < right) {
-					if (input[right] > pivotPoint) do {
-						--right;
-					} while (input[right] > pivotPoint);
-					if (input[left] < pivotPoint) do {
-						++left;
-					} while (input[left] < pivotPoint);
+					if (input[right] > pivotPoint) do { --right; } while (input[right] > pivotPoint);
+					if (input[left] < pivotPoint) do { ++left; } while (input[left] < pivotPoint);
 					if (left < right) {
 						t = input[left];
 						input[left] = input[right];
@@ -510,7 +506,7 @@ package skyboy.collections {
 				++d;
 			} while (true);
 		}
-		private function quickSortOn(input:Vector.<*> , sInput:Vector.<*> , left:int, right:int, d:uint = 0):void {
+		private function quickSortOn(input:Vector.<*>, sInput:Vector.<*>, left:int, right:int, d:uint = 0):void {
 			var j:uint = right >= input.length ? right = input.length - 1 : right;
 			if (left >= right) return;
 			var i:uint = left;
@@ -563,6 +559,69 @@ package skyboy.collections {
 					}
 					if (i < right) {
 						quickSortOn(input, sInput, i, right, d + 1);
+					}
+				} else if (!left) left = 1;
+				if (j <= left) return;
+				i = left;
+				right = j;
+				pivotPoint = input[(right + left) >>> 1];
+				size = right - left;
+				++d;
+			} while (true);
+		}
+		private function quickSortOnArray(input:Vector.<*>, sInput:Array, left:int, right:int, d:uint = 0):void {
+			var j:uint = right >= input.length ? right = input.length - 1 : right;
+			if (left >= right) return;
+			var i:uint = left;
+			var size:uint = right - left;
+			var pivotPoint:* = input[(right + left) >>> 1], t:*;
+			do {
+				if (size < 9) {
+					do {
+						pivotPoint = input[left];
+						do {
+							++left;
+							if (pivotPoint > input[left]) {
+								pivotPoint = input[left];
+								t = sInput[left];
+								do {
+									input[left] = input[left - 1];
+									sInput[left] = sInput[--left];
+								} while (left > i && pivotPoint < input[left]);
+								input[left] = pivotPoint;
+								sInput[left] = t;
+							}
+						} while (left < right);
+						++i;
+						left = i;
+					} while (i < right);
+					return;
+				}
+				while (left < right) {
+					if (input[right] > pivotPoint) do {
+						--right;
+					} while (input[right] > pivotPoint);
+					if (input[left] < pivotPoint) do {
+						++left;
+					} while (input[left] < pivotPoint);
+					if (left < right) {
+						t = input[left];
+						input[left] = input[right];
+						input[right] = t;
+						t = sInput[left];
+						sInput[left] = sInput[right];
+						sInput[right] = t;
+						++left, --right;
+					}
+				}
+				if (right) {
+					if (left == right) {
+						if (input[right] > pivotPoint) --right;
+						else if (input[left] < pivotPoint) ++left;
+						else ++left, --right;
+					}
+					if (i < right) {
+						quickSortOnArray(input, sInput, i, right, d + 1);
 					}
 				} else if (!left) left = 1;
 				if (j <= left) return;
@@ -638,12 +697,13 @@ package skyboy.collections {
 			var n:uint = _length;
 			if (n < 2) return this;
 			if (dirty) flush();
+			var ret:DenseMap = this;
 			if (callback is Function) {
 				quickSortC(vals, callback, 0, mLen);
 			} else {
 				var input:Vector.<*> = vals;
 				var q:uint, left:uint, right:uint = mLen;
-				var t:*;
+				var t:*, v:uint = nulls.length;
 				while (q != right) {
 					t = input[q]
 					if (t === undefined) {
@@ -670,34 +730,52 @@ package skyboy.collections {
 					if (--right) {
 						if (uint(right - 1) > left) {
 							if (callback is Number) options = callback;
-							if (options & NUMERIC) {
+							if (options == NUMERIC) {
 								quickSort(input, left, right);
 							} else {
 								var tempVec:Vector.<*> = sortVec;
 								q = right;
-								if (options & CASEINSENSITIVE) {
+								if (!(options & NUMERIC)) if (options & CASEINSENSITIVE) {
 									tempVec[q] = String(input[q]).toLowerCase();
 									while (q-- > left) tempVec[q] = String(input[q]).toLowerCase();
 								} else {
 									tempVec[q] = String(input[q]);
 									while (q-- > left) tempVec[q] = String(input[q]);
 								}
+								if (options & RETURNINDEXEDDENSEMAP) {
+									// TODO: indexed densemap return that doesn't destroy DenseMap order.
+									ret = new DenseMap(mLen);
+									input = ret.vals;
+									q = mLen - v;
+									while (q--) input[q + v] = q;
+								}
 								quickSortOn(tempVec, input, left, right);
 							}
-							// TODO: indexed array/densemap return.
 							// TODO: unique sort?
 						}
 					}
 				}
 			}
-			if (options & DESCENDING) {
-				prev[starti = next[endi = 0] = --n] = 0;
-				while (n--) next[prev[n] = n + 1] = n;
+			if (v) {
+				if (options & DESCENDING) {
+					prev[starti = next[endi = v] = --n + v] = v;
+					while (n--) next[prev[n + v] = v + n + 1] = n + v;
+				} else {
+					next[endi = prev[starti = v] = --n + v] = v;
+					while (--n) prev[next[n + v] = v + n + 1] = n + v;
+				}
+				if (ret == this) while (v--) nulls[v] = v;
+				else while (v--) ret.shift(), (nulls[v] = v);
 			} else {
-				next[endi = prev[starti = 0] = --n] = 0;
-				while (--n) prev[next[n] = n + 1] = n;
+				if (options & DESCENDING) {
+					prev[starti = next[endi = 0] = --n] = 0;
+					while (n--) next[prev[n] = n + 1] = n;
+				} else {
+					next[endi = prev[starti = 0] = --n] = 0;
+					while (--n) prev[next[n] = n + 1] = n;
+				}
 			}
-			return this;
+			return ret;
 		}
 		public function sortOn(name:String, options:uint = 0):DenseMap {
 			var n:uint = _length;
@@ -756,7 +834,7 @@ package skyboy.collections {
 					}
 				}
 			}
-			// TODO: indexed sortOn array/densemap return.
+			// TODO: indexed sortOn densemap return.
 			// TODO: unique sortOn?
 			if (options & DESCENDING) {
 				prev[starti = next[endi = 0] = --n] = 0;
@@ -765,6 +843,7 @@ package skyboy.collections {
 				next[endi = prev[starti = 0] = --n] = 0;
 				while (--n) prev[next[n] = n + 1] = n;
 			}
+			// TODO: fix nulls / starti / endi before return
 			return this;
 		}
 		/**
@@ -1412,7 +1491,45 @@ package skyboy.collections {
 				dirty = false;
 			}
 		}
-		
+		/**
+		 * allocate
+		 * Attempts to allocate additonal memory for size elements without increasing the length property.
+		 * @param	uint: size	The number of elements to allocate.
+		 */
+		public function allocate(size:uint):void {
+			var i:uint = uint(Number(mLen) + size); // converting to a Number then back to a uint so that in the event mLen + size > uint.MAX_VALUE the result will be uint.MAX_VALUE
+			vals.length = i;
+			next.length = i;
+			prev.length = i;
+			sortVec.length = i;
+			var j:uint = nulls.length, a:uint = mLen;
+			mLen = i;
+			if (i - size == a) {
+				i = a;
+				nulls.length += size;
+				while (size--) nulls[j + size] = i + size;
+			}
+			// TODO: verify allocate works
+		}
+		// TODO: deallocate?
+		/*
+		 * deallocate
+		 * Attempts to deallocate memory for size elements without removing active elements.
+		 * @param	uint: size	The number of elements to allocate.
+		 * @return	uint: The number of element spaces deallocated.
+		public function deallocate(size:uint):void {
+			if (!nulls.length) return 0;
+			var i:uint, c:uint;
+			if (nulls.length < size) {
+				size = nulls.length;
+			}
+			while (i < size) {
+				++i;
+				c = nulls.pop();
+				
+			}
+		}
+		//*/
 	}
 }
 

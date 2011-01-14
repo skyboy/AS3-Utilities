@@ -55,6 +55,7 @@
 	 */
 	import flash.events.Event;
 	import flash.events.TimerEvent;
+	import flash.utils.Timer;
 	import flash.media.Sound;
 	import flash.media.SoundChannel;
 	import flash.media.SoundTransform;
@@ -424,7 +425,7 @@
 		}
 		/**
 		 * changeGlobalVolume
-		 * @param	Number: volume	The volume to set on all sounds, playing or to be played
+		 * @param	Number: volume	The volume to set on all playing sounds and Sound objects in the manager.
 		 */
 		public function changeGlobalVolume(volume:Number):void {
 			var i:int = maxPlayableSounds, a:SoundTransform;

@@ -1,5 +1,6 @@
 package skyboy.text {
 	import flash.utils.getQualifiedClassName;
+	import flash.utils.Dictionary;
 	/**
 	 * JSON by skyboy. June 28th 2010.
 	 * Visit http://github.com/skyboy for documentation, updates
@@ -59,7 +60,9 @@ package skyboy.text {
 		private static const preArrs:Vector.<Array> = new Vector.<Array>();
 		private static const preObjs:Vector.<Object> = new Vector.<Object>();
 		private static const strArr:Array = new Array();
-		private static const qRepl:RegExp = /"|\\/g;
+		public static function parse(data:String):* {
+			return decode(data);
+		}
 		public static function decode(data:String):* {
 			if (data == null) {
 				return null;
@@ -96,30 +99,43 @@ package skyboy.text {
 			}
 			error(data, i);
 		}
-		public static function encode(data:*, advStringH:Boolean = true):String {
-			var ret:String = "";
-			if (data === null || data === undefined || data is Function) return "null";
+		public static function encode(data:*):String {
+			if (data == null) return "null";
+			var ret:String = "", c:String;
+			if ("toJSON" in data && data.toJSON is Function) try {
+				return data.toJSON();
+			} catch (e:ArgumentError) {
+				if (e.errorID != 1063) throw e;
+			}
+			if (data is Function) return "null";
 			if (data is String) {
-				return '"' + (advStringH ? handleStringE(data) : data.replace(qRepl, '\\$&')) + '"';
+				return handleStringE(data, false);
 			} else if (data is XML) {
-				return '"' + (advStringH ? handleStringE(data.toXMLString()) : data.toXMLString().replace(qRepl, '\\$&')) + '"';
+				return handleStringE(data.toXMLString(), false);
 			} else if (data is Number) {
-				if (data != data || data == Infinity || data == -Infinity) return "0";
+				if ((data * 0) != 0) return "0";
 				return data.toString(10);
 			} else if (data is Boolean) {
-				return data.toString();
+				return data ? "true" : "false";
 			} else if (data is Date) {
 				return data.getTime();
-			} else if (data is Array || getQualifiedClassName(data).indexOf("AS3.vec:") === 0) {
+			} else if (data is Array || getQualifiedClassName(data).indexOf("AS3.vec:") == 0) {
 				for each(var i:* in data) {
 					ret += encode(i) + ",";
 				}
 				return "[" + ret.substr(0, -1) + "]";
-			} else if (data is Object) {
+			} else if (data is Dictionary) {
 				for (var b:* in data) {
-					if (b is String || b is Number) {
-						ret += '"' + (advStringH ? handleStringE(b) : b.replace(qRepl, '\\$&')) + '":' + encode(data[b]) + ",";
-					}
+					if (b is String) ret += handleStringE(b) + encode(data[b]) + ",";
+					else if (b is Number) ret += handleStringE(b.toString(10)) + encode(data[b]) + ",";
+					else if (b is Date) ret += handleStringE(b.getTime().toString(10)) + encode(data[b]) + ",";
+					else if (b is XML) ret += handleStringE(b.toXMLString()) + encode(data[b]) + ",";
+					else if (b is Boolean) ret += (data ? '"true":' : '"false":') + encode(data[b]) + ",";
+				}
+				return "{" + ret.substr(0, -1) + "}";
+			} else if (data is Object) {
+				for (c in data) {
+					ret += handleStringE(c) + encode(data[c]) + ",";
 				}
 				return "{" + ret.substr(0, -1) + "}";
 			}
@@ -154,11 +170,12 @@ package skyboy.text {
 		private static function min(a:Number, b:Number):Number {
 			return a < b ? a : b;
 		}
-		private static function handleStringE(data:String):String {
+		private static function handleStringE(data:String, colon:Boolean = true):String {
 			var rtn:Array = strArr, inx:int, c:int, i:int;
 			var e:int = data.length, t:int;
 			if (e == 0) return "";
-			rtn.length = min(e * 5, String.length);
+			rtn.length = min(e * 5 + 3, 0xFFFFFF);
+			rtn[inx++] = 0x22;
 			while (i != e) {
 				c = data.charCodeAt(i++);
 				if (c < 32 || c > 127) {
@@ -185,6 +202,8 @@ package skyboy.text {
 				}
 				rtn[inx++] = c;
 			}
+			rtn[inx++] = 0x22;
+			if (colon) rtn[inx++] = 0x3A;
 			return ((rtn.length = inx), String.fromCharCode.apply(0, rtn));
 		}
 		private static function handleString(data:String, e:int):String {

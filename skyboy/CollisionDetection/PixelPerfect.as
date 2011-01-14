@@ -68,9 +68,10 @@
 			_root = root;
 			transformA = new ColorTransform(1, 0, 0, 1, 255, 0, 0, tol);
 			transformB = new ColorTransform(0, 1, 0, 1, 0, 255, 0, tol);
+			
 		}
-		protected static var root:DisplayObjectContainer, cTransformA:ColorTransform = new ColorTransform(1, 0, 0, 1, 255, 0, 0, 255), cTransformB:ColorTransform = new ColorTransform(0, 1, 0, 1, 0, 255, 0, 255), _lastRect:Rectangle = null;
-		protected var _root:DisplayObjectContainer, transformA:ColorTransform = new ColorTransform(1, 0, 0, 1, 255, 0, 0, 255), transformB:ColorTransform = new ColorTransform(0, 1, 0, 1, 0, 255, 0, 255), lastRect:Rectangle = null;
+		protected static var root:DisplayObjectContainer, cTransformA:ColorTransform = new ColorTransform(1, 0, 0, 1, 255, 0, 0, 255), cTransformB:ColorTransform = new ColorTransform(0, 1, 0, 1, 0, 255, 0, 255), _lastRect:Rectangle;
+		protected var _root:DisplayObjectContainer, transformA:ColorTransform , transformB:ColorTransform, lastRect:Rectangle;
 		/**
 		 * [read-only] rect: last Rectangle from a hitTest
 		 */
@@ -108,7 +109,7 @@
 		 * @return	Boolean: true if objA and objB are colliding
 		 */
 		public static function test(objA:DisplayObject, objB:DisplayObject):Boolean {
-			if (objA.parent && objB.parent) {
+			if (root) if (objA.parent && objB.parent) {
 				var oAB:Rectangle = objA.getBounds(root), oBB:Rectangle = objB.getBounds(root);
 				if (((oAB.right < oBB.left) || (oBB.right < oAB.left)) || ((oAB.bottom < oBB.top) || (oBB.bottom < oAB.top))) {
 					return false;
@@ -131,7 +132,7 @@
 			return false;
 		}
 		public function test(objA:DisplayObject, objB:DisplayObject):Boolean {
-			if (objA.parent && objB.parent) {
+			if (_root) if (objA.parent && objB.parent) {
 				var oAB:Rectangle = objA.getBounds(_root), oBB:Rectangle = objB.getBounds(_root);
 				if (((oAB.right < oBB.left) || (oBB.right < oAB.left)) || ((oAB.bottom < oBB.top) || (oBB.bottom < oAB.top))) {
 					return false;
@@ -159,7 +160,7 @@
 		 * @return	Rectangle: the bounding rectangle of the collision or null
 		 */
 		public static function hitRect(objA:DisplayObject, objB:DisplayObject):Rectangle {
-			if (objA.parent && objB.parent) {
+			if (root) if (objA.parent && objB.parent) {
 				var oAB:Rectangle = objA.getBounds(root), oBB:Rectangle = objB.getBounds(root);
 				if (((oAB.right < oBB.left) || (oBB.right < oAB.left)) || ((oAB.bottom < oBB.top) || (oBB.bottom < oAB.top))) {
 					return null;
@@ -182,7 +183,7 @@
 			return null;
 		}
 		public function hitRect(objA:DisplayObject, objB:DisplayObject):Rectangle {
-			if (objA.parent && objB.parent) {
+			if (_root) if (objA.parent && objB.parent) {
 				var oAB:Rectangle = objA.getBounds(_root), oBB:Rectangle = objB.getBounds(_root);
 				if (((oAB.right < oBB.left) || (oBB.right < oAB.left)) || ((oAB.bottom < oBB.top) || (oBB.bottom < oAB.top))) {
 					return null;

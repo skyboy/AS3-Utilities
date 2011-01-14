@@ -130,7 +130,9 @@ package skyboy.collections {
 		}
 
 		public function every(callback:Function, thisObject:* = null):Boolean {
-			for (var cur:LinkedVectorNode = head, index:int; cur; cur = cur.next) {if (!callback.call(thisObject, cur.data, index++, this)) {return false;}	}
+			var cur:LinkedVectorNode = head, index:int;
+			if (thisObject != null) for (; cur; cur = cur.next) if (!callback.call(thisObject, cur.data, index++, this)) return false;
+			else for (; cur; cur = cur.next) if (!callback(cur.data, index++, this)) return false;
 			return true;
 		}
 
@@ -155,7 +157,9 @@ package skyboy.collections {
 		}
 
 		public function forEach(callback:Function, thisObject:* = null):void {
-			for (var cur:LinkedVectorNode = head, index:int; cur; cur = cur.next) {	callback.call(thisObject, cur.data, index++, this);	}
+			var cur:LinkedVectorNode = head, index:int;
+			if (thisObject != null ) for (; cur; cur = cur.next) callback.call(thisObject, cur.data, index++, this);
+			else for (; cur; cur = cur.next) callback(cur.data, index++, this);
 		}
 
 		public function indexOf(searchElement:Object, fromIndex:int = 0):int {
@@ -356,12 +360,10 @@ package skyboy.collections {
 		}
 
 		public function some(callback:Function, thisObject:* = null):Boolean {
-			var index:int;
-			for (var cur:LinkedVectorNode = head; cur; cur = cur.next) {
-				if (callback.call(thisObject, cur.data, index++, this)) {
-					return true;
-				}
-			}
+			var cur:LinkedVectorNode = head, index:int;
+			if (thisObject == null) {
+				for (; cur; cur = cur.next) if (callback(cur.data, index++, this)) return true;
+			} else for (; cur; cur = cur.next) if (callback.call(thisObject, cur.data, index++, this)) return true;
 			return false;
 		}
 
@@ -452,9 +454,9 @@ package skyboy.collections {
 				return "";
 			}
 
-			var ret:String = "";
+			var ret:String = "", a:Object;
 			for (var curNode:LinkedVectorNode = this.head; curNode; curNode = curNode.next) {
-				ret += curNode.data + ",";
+				ret += ((a = curNode.data) ? a.toLocaleString() : String(a)) + ",";
 			}
 			return ret.substr(0, ret.length-1);
 		}
@@ -529,7 +531,7 @@ package skyboy.collections {
 		this.next = next;
 		this.prev = prev;
 	}
-	public function clone():LinkedVectorNode {
-		return new LinkedVectorNode(data);
+	public function clone(next:LinkedVectorNode = null, prev:LinkedVectorNode = null):LinkedVectorNode {
+		return new LinkedVectorNode(data, next, prev);
 	}
 }
