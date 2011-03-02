@@ -55,8 +55,16 @@ package skyboy.utils {
 	 * ...
 	 * @author skyboy
 	 */
+	/**
+	 * fastSort(*, uint);
+	 * fastSort(*, String, uint);
+	 *
+	 * fastSort(vectorRef, "z", Array.NUMERIC);
+	 * @param	*: input	The object to be sorted. Either an Array, Vector, or any Object (or subclass of) that has a length property and numeric indicies
+	 * @param	*: ...rest	The second parameter can either be options (pass in the same you would for Array's sort method) or a String to trigger sortOn functionality, the third should then be the options.
+	 */
 	public function fastSort(input:*, ...rest):void {
-		if (!(input || ("length" in input) || input.length is int)) return;
+		if (!input || !("length" in input) || !(input.length is int)) return;
 		sortVec.length = 0;
 		sortVec.length = input.length as uint;
 		if (rest[0] is String) {
