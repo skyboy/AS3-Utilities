@@ -8,7 +8,7 @@ and some help from http://freespace.virgin.net/hugo.elias/models/m_perlin.htm
 AS3 optimizations by Mario Klingemann http://www.quasimondo.com
 further AS3 optimizations by skyboy http://skyript.com/
 */
-package /*nl.ronvalstar.math*/skyboy.math {
+package skyboy.math { /*nl.ronvalstar.math*/
 	import flash.display.BitmapData;
 	
 	final public class OptimizedPerlin {
@@ -442,4 +442,5 @@ package /*nl.ronvalstar.math*/skyboy.math {
 		}
 	}
 }
+import skyboy.math.OptimizedPerlin
 internal const oNoise:OptimizedPerlin = new OptimizedPerlin;
