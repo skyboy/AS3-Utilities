@@ -1,4 +1,5 @@
 package skyboy.collections {
+	import flash.utils.ByteArray;
 	/**
 	 *   A linked list, which is a single-dimensional chain of objects called
 	 *   nodes. This implementation is doubly-linked, so each node has a link
@@ -12,30 +13,48 @@ package skyboy.collections {
 		public static const DESCENDING:int =      0x02;
 		public static const STRINGSORT:int =      0x04;
 		public static const NUMERIC:int =         0x10;
+		
+		public static function fromArray(arr:Array):LinkedVector {
+			var i:int = arr.length;
+			if (!i) return new LinkedVector();
+			var newNode:LinkedVectorNode = new LinkedVectorNode(arr[--i]);
+			var ret:LinkedVector = new LinkedVector();
+			ret.tail = newNode;
+			while (i--) {
+				newNode = newNode.prev = new LinkedVectorNode(arr[i], newNode);
+			}
+			ret.head = newNode;
+			return ret;
+		}
+		
+		private static const emptyNode:LinkedVectorNode = new LinkedVectorNode;
+		
 		private const CASEINSENSITIVE:int = 0x01;
 		private const DESCENDING:int =      0x02;
 		private const STRINGSORT:int = 	    0x04;
 		private const NUMERIC:int =         0x10;
+		private const emptyNode:LinkedVectorNode = LinkedVector.emptyNode;
+		
 		public var head:LinkedVectorNode;
 		public var tail:LinkedVectorNode;
-		private var _length:uint;
-		private static var emptyNode:LinkedVectorNode = new LinkedVectorNode;
-		private var emptyNode:LinkedVectorNode = LinkedVector.emptyNode;
 		public function get length():uint {
 			return _length;
 		}
-			
 		public function set length(value:uint):void {
 			if (value == _length) return;
+			var tail:LinkedVectorNode = this.tail;
 			if (value > 0) {
-				if (_length < value) (tail = nodeAt(value)).next = null;
-				else if (value - _length == 1) tail = tail.next = new LinkedVectorNode(null, null, tail);
-				else for (var i:int = _length; i < value; ++i) {
-					head = head.prev = new LinkedVectorNode(null, head);
+				if (_length < value) (this.tail = nodeAt(value)).next = null;
+				else {
+					for (var i:uint = _length; i < value; ++i) tail = tail.next = new LinkedVectorNode(null, null, tail);
+					this.tail = tail;
 				}
 			} else tail = head = null;
 			_length = value;
 		}
+
+		private var _length:uint;
+		private var bytes:ByteArray = new ByteArray();
 
 		public function LinkedVector(...values) {
 			var head:LinkedVectorNode;
@@ -63,51 +82,16 @@ package skyboy.collections {
 			this.head = head;
 		}
 
-		/**
-		 *   Equivalent to the Array [] operator
-		 *   @param index Index of the element to get
-		 *   @return The element at the given index
-		 */
-		public function elementAt(index:int):* {
-			if (index < 0) {
-				throw new TypeError("Error #2007");
-			} else if (index >= _length) {
-				return null;
-			}
-			return nodeAt(index).data;
-		}
-
-		private var lastNodeAt:LinkedVectorNode, lastNodeAtI:uint;
-		public function nodeAt(index:int):LinkedVectorNode {
-			if (index >= _length) {
-				return null;
-			} else {
-				var cur:LinkedVectorNode, hLength:uint = _length >> 1;
-				if (hLength > index) {
-					if (!index) return head;
-					cur = head;
-					while (index--) cur = cur.next;
-					return cur;
-				} else { // Element is in the second half, start at the end
-					index = (_length - index) - 1;
-					if (!index) return tail;
-					cur = tail;
-					while (index--) cur = cur.prev;
-					return cur;
-				}
-			}
-		}
-
 		public function concat(...args):LinkedVector {
 			var newNode:LinkedVectorNode, cur:LinkedVectorNode;
-			var ret:LinkedVector = new LinkedVector();
-			if (_length) {
+			var ret:LinkedVector = new LinkedVector(), len:int = _length;
+			if (len) {
 				// Add everything from this list
 				newNode = ret.tail = (cur = tail).clone();
-				while ((cur = cur.prev)) { newNode = newNode.prev = cur.clone(newNode); }
+				while ((cur = cur.prev)) newNode = newNode.prev = new LinkedVectorNode(cur.data, newNode);
 				ret.head = newNode;
-			}
-			newNode = ret.tail;
+				newNode = ret.tail;
+			} else newNode = ret.head = emptyNode;
 
 			// Add everything from args
 			var list:LinkedVector;
@@ -116,14 +100,41 @@ package skyboy.collections {
 				if (arg is LinkedVector) {
 					list = arg;
 					for (cur = list.head; cur; cur = cur.next) {
-						newNode.next = (newNode = new LinkedVectorNode(cur.data, null, newNode));
+						newNode = newNode.next = new LinkedVectorNode(cur.data, null, newNode);
+						++len;
 					}
 				} else { // No flattening for any other type, even Array
-					newNode.next = (newNode = new LinkedVectorNode(arg, null, newNode));
+					newNode = newNode.next = new LinkedVectorNode(arg, null, newNode);
+					++len;
 				}
 			}
+			if (ret.head == emptyNode) if (emptyNode.next) emptyNode.next = (ret.head = emptyNode.next).prev = null; else ret.head = null;
 			ret.tail = newNode;
+			ret._length = len;
 			return ret;
+		}
+
+		public function countNodes():uint {
+			var i:int, cur:LinkedVectorNode = head, p:LinkedVectorNode;
+			if (cur) {
+				do {
+					p = cur;
+					cur = cur.next;
+					++i;
+				} while (cur);
+				tail = p;
+			} else tail = null;
+			return _length = i;
+		}
+
+		/**
+		 *   Equivalent to the Array [] operator
+		 *   @param index Index of the element to get
+		 *   @return The element at the given index
+		 */
+		public function elementAt(index:int):* {
+			if (uint(index) >= _length) return null;
+			return nodeAt(index).data;
 		}
 
 		public function every(callback:Function, thisObject:* = null):Boolean {
@@ -136,13 +147,15 @@ package skyboy.collections {
 
 		public function filter(callback:Function, thisObject:* = null):LinkedVector {
 			var ret:LinkedVector = new LinkedVector();
-			var cur:LinkedVectorNode = head, index:int, n:LinkedVectorNode = emptyNode;
-			if (thisObject == null) {
-				for (; cur; cur = cur.next) if (callback(cur.data, index++, this)) n = n.next = new LinkedVectorNode(cur.data, null, n);
-			} else for (; cur; cur = cur.next) if (callback.call(thisObject, cur.data, index++, this)) n = n.next = new LinkedVectorNode(cur.data, null, n);
-			emptyNode.next = (ret.head = emptyNode.next).prev = null;
-			ret.tail = null;
-			
+			var index:int, cur:LinkedVectorNode = head, n:LinkedVectorNode = emptyNode;
+			if (cur) {
+				if (thisObject == null) {
+					for (; cur; cur = cur.next) if (callback(cur.data, index++, this)) n = n.next = new LinkedVectorNode(cur.data, null, n);
+				} else for (; cur; cur = cur.next) if (callback.call(thisObject, cur.data, index++, this)) n = n.next = new LinkedVectorNode(cur.data, null, n);
+				emptyNode.next = (ret.head = emptyNode.next).prev = null;
+				ret.tail = n;
+				ret._length = index;
+			}
 			return ret;
 		}
 
@@ -152,88 +165,124 @@ package skyboy.collections {
 			else for (; cur; cur = cur.next) callback(cur.data, index++, this);
 		}
 
-		public function indexOf(searchElement:*, fromIndex:int = 0):int {
-			var cur:LinkedVectorNode, index:int;
-			if (fromIndex < _length) {
-				cur = nodeAt(fromIndex);
-				index = _length - fromIndex;
-			} else {
-				cur = head;
-				index = _length;
+		public function indexOf(searchElement:*, fromIndex:int = 0):Number {
+			var cur:LinkedVectorNode;
+			if (uint(fromIndex) < _length) {
+				if (fromIndex) cur = nodeAt(fromIndex); else cur = head;
+				while (cur) {
+					if (cur.data === searchElement) return Number(uint(fromIndex)); // Number used in place of int to allow the full address space to be used for LinkedLists
+												// on more modern computers that offer more than 4 GB of RAM. ulong would be preferred.
+					++fromIndex;
+					cur = cur.next;
+				}
 			}
-			while (cur) {
-				if (cur.data === searchElement) return index;
-				--index;
-				cur = cur.next;
-			}
-			return -1;
+			return NaN; // not in list, return NaN instead of -1 since it makes more sense now that Number is used instead of int
 		}
 
 		public function join(sep:String = ","):String {
-			if (!head) {
-				return "";
-			}
+			if (!head) return "";
 
-			var ret:String = "";
+			var ret:ByteArray = bytes;
+			ret.position = 0;
+			ret.length = _length * 25; // preallocate enough space for 25 characters per element plus separator
 			for (var curNode:LinkedVectorNode = head; curNode.next; curNode = curNode.next) {
-				ret += curNode.data + sep;
+				ret.writeUTFBytes(String(curNode.data));
+				ret.writeUTFBytes(sep); // this can be optimized with anoter bytearray and copybytes
 			}
-			return ret + curNode.data;
+			ret.writeUTFBytes(String(curNode.data));
+			var i:int = ret.position;
+			ret.position = 0;
+			return ret.readUTFBytes(i);
 		}
 
-		public function lastIndexOf(searchElement:*, fromIndex:uint = 0x7FFFFFFF):int {
-			var cur:LinkedVectorNode, index:int;
-			if (fromIndex < _length) {
-				cur = nodeAt(index = fromIndex);
+		public function lastIndexOf(searchElement:*, fromIndex:int = 0xFFFFFFFF):Number {
+			var cur:LinkedVectorNode;
+			if (uint(fromIndex) < _length) {
+				cur = nodeAt(fromIndex);
 			} else {
 				cur = tail;
-				index = _length;
+				fromIndex = _length;
 			}
 			while (cur) {
-				if (cur.data === searchElement) return index;
-				--index;
+				if (cur.data === searchElement) return Number(uint(fromIndex)); // Number used in place of int to allow the full address space to be used for LinkedLists
+											// on more modern computers that offer more than 4 GB of RAM. ulong would be preferred.
+				--fromIndex;
 				cur = cur.prev;
 			}
-			return -1;
+			return NaN; // not in list, return NaN instead of -1 since it makes more sense now that Number is used instead of int
 		}
 
 		public function map(callback:Function, thisObject:* = null):LinkedVector {
 			var ret:LinkedVector = new LinkedVector();
-			var index:int = 0, cur:LinkedVectorNode = this.head;
-			var n:LinkedVectorNode = emptyNode;
-			if (thisObject != null ) {
-				for (; cur; cur = cur.next) n = n.next = new LinkedVectorNode(callback.call(thisObject, cur.data, index++, this), null, n);
-			} else for (; cur; cur = cur.next) n = n.next = new LinkedVectorNode(callback(cur.data, index++, this), null, n);
-			emptyNode.next = (ret.head = emptyNode.next).prev = null;
-			ret.tail = null;
+			var index:int = 0, cur:LinkedVectorNode = this.head, n:LinkedVectorNode = emptyNode;
+			if (cur) {
+				if (thisObject != null ) {
+					for (; cur; cur = cur.next) n = n.next = new LinkedVectorNode(callback.call(thisObject, cur.data, index++, this), null, n);
+				} else for (; cur; cur = cur.next) n = n.next = new LinkedVectorNode(callback(cur.data, index++, this), null, n);
+				emptyNode.next = (ret.head = emptyNode.next).prev = null;
+				ret.tail = n;
+				ret._length = index;
+			}
 			return ret;
 		}
 
+		public function nodeAt(index:int):LinkedVectorNode {
+			if (index >= _length) return null;
+
+			var cur:LinkedVectorNode, hLength:uint = _length >> 1;
+			if (hLength > uint(index)) {
+				if (!index) return head;
+				cur = head;
+				while (index--) cur = cur.next;
+				return cur;
+			} else { // Element is in the second half, start at the end
+				index = (_length - index) - 1;
+				if (!index) return tail;
+				cur = tail;
+				while (index--) cur = cur.prev;
+				return cur;
+			}
+		}
+
 		public function pop():* {
+			var tail:LinkedVectorNode = this.tail;
 			if (!tail) return null;
 			var ret:* = tail.data;
-			return ((tail = tail.prev), --_length, ret);
+			tail = tail.prev;
+			if (tail) tail.next = null;
+			this.tail = tail;
+			--_length;
+			return ret;
 		}
 
 		public function push(...args):uint {
 			var a:int = args.length;
 			if (a) {
-				if (a == 1) {
-					if (_length == 0) {
-						head = tail = new LinkedVectorNode(args[0]);
-						return _length = 1;
-					}
-					tail = tail.next = new LinkedVectorNode(args[0], null, tail);
-					return ++_length;
-				} else if (_length == 0) {
+				if (!_length) {
 					head = tail = new LinkedVectorNode(args[--a]);
-					if (a == 0) return ++_length;
+					if (!a) return ++_length;
+					++_length;
 				}
 				_length += a;
 				var newNode:LinkedVectorNode = tail.next = new LinkedVectorNode(args[--a], null, tail);
-				while (a) { newNode = newNode.next = new LinkedVectorNode(args[--a], null, newNode); }
+				while (a--) newNode = newNode.next = new LinkedVectorNode(args[a], null, newNode);
 				tail = newNode;
-				return _length;
+			}
+			return _length;
+		}
+
+		public function pushArray(args:Array):uint {
+			var a:int = args.length;
+			if (a) {
+				if (!_length) {
+					head = tail = new LinkedVectorNode(args[--a]);
+					if (!a) return ++_length;
+					++_length;
+				}
+				_length += a;
+				var newNode:LinkedVectorNode = tail.next = new LinkedVectorNode(args[--a], null, tail);
+				while (a--) newNode = newNode.next = new LinkedVectorNode(args[a], null, newNode);
+				tail = newNode;
 			}
 			return _length;
 		}
@@ -257,52 +306,34 @@ package skyboy.collections {
 		}
 
 		public function shift():* {
+			var head:LinkedVectorNode = this.head;
 			if (!head) return null;
 			var ret:* = head.data;
-			return ((head = head.next), --_length, ret);
+			head = head.next;
+			if (head) head.prev = null;
+			this.head = head;
+			--_length;
+			return ret;
 		}
 
-		public function unshift(...args):uint {
-			var a:int = args.length;
-			if (a) {
-				if (a == 1) {
-					if (_length == 0) {
-						head = tail = new LinkedVectorNode(args[0]);
-						return _length = 1;
-					}
-					head = head.prev = new LinkedVectorNode(args[0], head);
-					return ++_length;
-				} else if (_length == 0) {
-					head = tail = new LinkedVectorNode(args[--a]);
-					if (a == 0) return ++_length;
-				}
-				_length += a
-				var newNode:LinkedVectorNode = head.prev = new LinkedVectorNode(args[--a], head);
-				while (a) {
-					newNode = newNode.prev = new LinkedVectorNode(args[--a], newNode);
-				}
-				head = newNode;
-				return _length;
-			}
-			return _length;
-		}
-
-		public function slice(startIndex:int = 0, endIndex:int = 2147483647):LinkedVector {
+		public function slice(startIndex:int = 0, endIndex:int = 0xFFFFFFFF):LinkedVector {
 			var ret:LinkedVector = new LinkedVector();
-			if (int(startIndex >= _length) | int(endIndex <= startIndex)) {
+			if (int(uint(startIndex) >= _length) | int(uint(endIndex) <= uint(startIndex))) {
 				return ret;
-			} else if (endIndex > _length) {
+			} else if (uint(endIndex) > _length) {
 				endIndex = _length;
 			}
 			var cur:LinkedVectorNode = startIndex == 0 ? head : nodeAt(startIndex);
 			var newNode:LinkedVectorNode = new LinkedVectorNode(cur.data);
 			endIndex -= startIndex;
+			startIndex = 1;
 			ret.head = newNode;
 			while (--endIndex) {
 				cur = cur.next;
-				newNode.next = new LinkedVectorNode(cur.data, null, newNode);
-				newNode = newNode.next;
+				newNode = newNode.next = new LinkedVectorNode(cur.data, null, newNode);
+				++startIndex;
 			}
+			ret._length = startIndex;
 			ret.tail = newNode;
 			return ret;
 		}
@@ -319,24 +350,26 @@ package skyboy.collections {
 		 * sort and sortOn are based on an AS3 adaptation and optimization of:
 		 * http://www.chiark.greenend.org.uk/~sgtatham/algorithms/listsort.html
 		 */
-		public function sort(cmp:Function, options:int = 0):void {
+		public function sort(cmp:Function = null, options:int = 0):void {
 			var p:LinkedVectorNode;
 			var q:LinkedVectorNode;
 			var e:LinkedVectorNode;
 			var tail:LinkedVectorNode;
-			var insize:int = 2;
+			var insize:int = 1;
 			var nmerges:int;
 			var psize:int;
 			var qsize:int;
 			var list:LinkedVectorNode = this.head;
 			if (!list) return;
 
+			list.prev = this.tail.next = null; // ensure no circular references
+
 			if (options & NUMERIC) for (p = list; p; p = p.next) p.data2 = Number(p.data);
 			else if (options & CASEINSENSITIVE) for (p = list; p; p = p.next) p.data2 = String(p.data).toUpperCase();
 			else if (options & STRINGSORT) for (p = list; p; p = p.next) p.data2 = String(p.data);
 			else for (p = list; p; p = p.next) p.data2 = p.data;
 
-			do {
+			if (Boolean(cmp)) do {
 				p = list;
 				list = null;
 				tail = null;
@@ -351,11 +384,34 @@ package skyboy.collections {
 						q = q.next;
 					}
 
-					qsize = insize * int(Boolean(q)); // if q is null, qsize is 0.
+					qsize = insize; // if q is null, qsize is 0.
 
-					while (psize | qsize) {
-						/* decide whether next element of merge comes from p or q */
-						if (!qsize) {
+					if (!(qsize * int(Boolean(q)))) {
+						e = p;
+						p = p.next;
+						psize--;
+					} else if (!psize) {
+						e = q;
+						q = q.next;
+						qsize--;
+					} else if (cmp(p.data2, q.data2) <= 0) {
+						e = p;
+						p = p.next;
+						psize--;
+					} else {
+						e = q;
+						q = q.next;
+						qsize--;
+					}
+					if (tail) {
+						tail.next = e;
+					} else {
+						list = e;
+					}
+					e.prev = tail;
+					tail = e;
+					while (psize | (qsize * int(Boolean(q)))) {
+						if (!(qsize * int(Boolean(q)))) {
 							e = p;
 							p = p.next;
 							psize--;
@@ -372,14 +428,8 @@ package skyboy.collections {
 							q = q.next;
 							qsize--;
 						}
-		
-						/* add the next element to the merged list */
-						if (tail) {
-							tail.next = e;
-						} else {
-							list = e;
-						}
-						/* Maintain reverse pointers in a doubly linked list. */
+
+						tail.next = e;
 						e.prev = tail;
 						tail = e;
 					}
@@ -390,7 +440,78 @@ package skyboy.collections {
 				tail.next = null;
 
 				insize *= 2;
-			} while (nmerges <= 1);
+			} while (nmerges > 1); else do {
+				p = list;
+				list = null;
+				tail = null;
+
+				nmerges = 0;  /* count number of merges we do in this pass */
+
+				while (p) {
+					nmerges++;  /* there exists a merge to be done */
+					/* step `insize' places along from p */
+					q = p;
+					for (psize = 0; int(psize < insize) & int(Boolean(q)); ++psize) {
+						q = q.next;
+					}
+
+					qsize = insize; // if q is null, qsize is 0.
+
+					if (!(qsize * int(Boolean(q)))) {
+						e = p;
+						p = p.next;
+						psize--;
+					} else if (!psize) {
+						e = q;
+						q = q.next;
+						qsize--;
+					} else if (p.data2 <= q.data2) {
+						e = p;
+						p = p.next;
+						psize--;
+					} else {
+						e = q;
+						q = q.next;
+						qsize--;
+					}
+					if (tail) {
+						tail.next = e;
+					} else {
+						list = e;
+					}
+					e.prev = tail;
+					tail = e;
+					while (psize | (qsize * int(Boolean(q)))) {
+						if (!(qsize * int(Boolean(q)))) {
+							e = p;
+							p = p.next;
+							psize--;
+						} else if (!psize) {
+							e = q;
+							q = q.next;
+							qsize--;
+						} else if (p.data2 <= q.data2) {
+							e = p;
+							p = p.next;
+							psize--;
+						} else {
+							e = q;
+							q = q.next;
+							qsize--;
+						}
+
+						tail.next = e;
+						e.prev = tail;
+						tail = e;
+					}
+
+					/* now p has stepped `insize' places along, and q has too */
+					p = q;
+				}
+				tail.next = null;
+
+				insize *= 2;
+			} while (nmerges > 1);
 			this.head = list;
 			this.tail = tail;
 		}
@@ -400,12 +521,14 @@ package skyboy.collections {
 			var q:LinkedVectorNode;
 			var e:LinkedVectorNode;
 			var tail:LinkedVectorNode;
-			var insize:int = 2;
+			var insize:int = 1;
 			var nmerges:int;
 			var psize:int;
 			var qsize:int;
 			var list:LinkedVectorNode = this.head;
 			if (!list) return;
+
+			list.prev = this.tail.next = null; // ensure no circular references from user code
 
 			if (options & NUMERIC) for (p = list; p; p = p.next) p.data2 = Number(p.data[fieldName]);
 			else if (options & CASEINSENSITIVE) for (p = list; p; p = p.next) p.data2 = String(p.data[fieldName]).toUpperCase();
@@ -426,11 +549,34 @@ package skyboy.collections {
 						q = q.next;
 					}
 
-					qsize = insize * int(Boolean(q)); // if q is null, qsize is 0.
+					qsize = insize;
 
-					while (psize | qsize) {
-						/* decide whether next element of merge comes from p or q */
-						if (!qsize) {
+					if (!(qsize * int(Boolean(q)))) {
+						e = p;
+						p = p.next;
+						psize--;
+					} else if (!psize) {
+						e = q;
+						q = q.next;
+						qsize--;
+					} else if (p.data2 <= q.data2) {
+						e = p;
+						p = p.next;
+						psize--;
+					} else {
+						e = q;
+						q = q.next;
+						qsize--;
+					}
+					if (tail) {
+						tail.next = e;
+					} else {
+						list = e;
+					}
+					e.prev = tail;
+					tail = e;
+					while (psize | (qsize * int(Boolean(q)))) {
+						if (!(qsize * int(Boolean(q)))) {
 							e = p;
 							p = p.next;
 							psize--;
@@ -447,33 +593,26 @@ package skyboy.collections {
 							q = q.next;
 							qsize--;
 						}
-		
-						/* add the next element to the merged list */
-						if (tail) {
-							tail.next = e;
-						} else {
-							list = e;
-						}
-						/* Maintain reverse pointers in a doubly linked list. */
+
+						tail.next = e;
 						e.prev = tail;
 						tail = e;
 					}
 
-					/* now p has stepped `insize' places along, and q has too */
 					p = q;
 				}
 				tail.next = null;
 
 				insize *= 2;
-			} while (nmerges <= 1);
+			} while (nmerges > 1);
 			this.head = list;
 			this.tail = tail;
 		}
 
 		public function splice(startIndex:int, deleteCount:int, ...values):LinkedVector {
 			var ret:LinkedVector = new LinkedVector(), cur:LinkedVectorNode, tempNode:LinkedVectorNode;
-			if (startIndex > _length) return ret;
-			else if (deleteCount > 0) {
+			if (int(startIndex >= _length) | int(!(values.length | deleteCount))) return ret;
+			else if (deleteCount != 0) {
 				var endIndex:int = startIndex + deleteCount;
 				if (endIndex >= _length) {
 					if (startIndex == 0) {
@@ -503,7 +642,9 @@ package skyboy.collections {
 						return ret;
 					} else {
 						cur = nodeAt(startIndex);
-						tempNode = nodeAt(endIndex + 1);
+						startIndex = endIndex - startIndex - 1;
+						if (startIndex > _length - endIndex) tempNode = nodeAt(endIndex + 1);
+						else for (tempNode = cur; startIndex--; ) tempNode = tempNode.next;
 						(ret.head = cur.next).prev = cur.next = (ret.tail = tempNode.prev).next = tempNode.prev = null;
 						var t:LinkedVectorNode = tail;
 						tail = cur;
@@ -523,7 +664,7 @@ package skyboy.collections {
 						cur = tail;
 						tempNode = (tail = nodeAt(startIndex)).next;
 						push.apply(this, values);
-						tail.next = tempNode;
+						(tail.next = tempNode).prev = tail;
 						tail = cur;
 					}
 				}
@@ -531,28 +672,30 @@ package skyboy.collections {
 			return ret;
 		}
 
-		public function toString():String {
-			if (!this.head) {
-				return "";
-			}
-
-			var ret:String = "";
-			for (var curNode:LinkedVectorNode = head; curNode.next; curNode = curNode.next) {
-				ret += curNode.data + ",";
-			}
-			return ret + curNode.data;
-		}
-
 		public function toLocaleString():String {
-			if (!this.head) {
-				return "";
-			}
+			if (!this.head) return "";
 
 			var ret:String = "", a:*;
 			for (var curNode:LinkedVectorNode = this.head; curNode; curNode = curNode.next) {
 				ret += ((a = curNode.data) ? a.toLocaleString() : String(a)) + ",";
 			}
 			return ret.substr(0, ret.length-1);
+		}
+
+		public function toString():String {
+			if (!head) return "";
+
+			var ret:ByteArray = bytes;
+			ret.position = 0;
+			ret.length = _length * 25; // preallocate enough space for 25 characters per element plus separator
+			for (var curNode:LinkedVectorNode = head; curNode.next; curNode = curNode.next) {
+				ret.writeUTFBytes(String(curNode.data));
+				ret[ret.position++] = 0x2C;
+			}
+			ret.writeUTFBytes(String(curNode.data));
+			var i:int = ret.position;
+			ret.position = 0;
+			return ret.readUTFBytes(i);
 		}
 
 		public function toVector(fixed:Boolean = false):Vector.<*> {
@@ -573,15 +716,37 @@ package skyboy.collections {
 			return ret;
 		}
 
-		public static function fromArray(arr:Array):LinkedVector {
-			var i:int = arr.length, newNode:LinkedVectorNode = new LinkedVectorNode(arr[i - 1]);
-			var ret:LinkedVector = new LinkedVector();
-			ret.tail = newNode;
-			while (i--) {
-				newNode = newNode.prev = new LinkedVectorNode(arr[i], newNode);
+		public function unshift(...args):uint {
+			var a:int = args.length;
+			if (a) {
+				if (!_length) {
+					head = tail = new LinkedVectorNode(args[--a]);
+					if (!a) return ++_length;
+					++_length;
+				}
+				_length += a
+				var newNode:LinkedVectorNode = head.prev = new LinkedVectorNode(args[--a], head);
+				while (a--) newNode = newNode.prev = new LinkedVectorNode(args[a], newNode);
+				head = newNode;
 			}
-			ret.head = new LinkedVectorNode(arr[0], newNode);
-			return ret;
+			return _length;
 		}
+
+		public function unshiftArray(args:Array):uint {
+			var a:int = args.length;
+			if (a) {
+				if (!_length) {
+					head = tail = new LinkedVectorNode(args[--a]);
+					if (!a) return ++_length;
+					++_length;
+				}
+				_length += a
+				var newNode:LinkedVectorNode = head.prev = new LinkedVectorNode(args[--a], head);
+				while (a--) newNode = newNode.prev = new LinkedVectorNode(args[a], newNode);
+				head = newNode;
+			}
+			return _length;
+		}
+
 	}
 }
