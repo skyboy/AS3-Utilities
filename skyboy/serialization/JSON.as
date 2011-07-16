@@ -1,4 +1,5 @@
-package skyboy.text {
+package skyboy.serialization {
+	import flash.utils.ByteArray;
 	import flash.utils.getQualifiedClassName;
 	import flash.utils.Dictionary;
 	/**
@@ -59,7 +60,8 @@ package skyboy.text {
 		private static var i:int;
 		private static const preArrs:Vector.<Array> = new Vector.<Array>();
 		private static const preObjs:Vector.<Object> = new Vector.<Object>();
-		private static const strArr:Array = new Array();
+		private static const strArr:ByteArray = new ByteArray();strArr.length = 0xFFFF;
+		private static const strArrE:ByteArray = new ByteArray();strArrE.length = 0xFFFF;
 		public static function parse(data:String):* {
 			return decode(data);
 		}
@@ -86,60 +88,153 @@ package skyboy.text {
 					c = data.charCodeAt(++i);
 				} while (isSpace(c) && i != e);
 			}
+			var rtn:*;
 			if (isObject(c)) {
-				return handleObject(data, e);
+				rtn = handleObject(data, e);
 			} else if (isArray(c)) {
-				return handleArray(data, e);
+				rtn = handleArray(data, e);
 			} else if (isString(c)) {
-				return handleString(data, e);
+				rtn = handleString(data, e);
 			} else if (isNumber(c)) {
-				return handleNumber2(data, e);
+				rtn = handleNumber2(data, e);
 			} else if (isLit(c)) {
 				return handleLit(data, e);
 			}
-			error(data, i);
+			if (rtn === undefined) error(data, i);
+			strArr.length = 0;
+			return rtn;
 		}
-		public static function encode(data:*):String {
-			if (data == null) return "null";
-			var ret:String = "", c:String;
-			if ("toJSON" in data && data.toJSON is Function) try {
-				return data.toJSON();
+		private static function tryToJSON(data:*):String {
+			try {
+				return data.toJSON() as String;
 			} catch (e:ArgumentError) {
 				if (e.errorID != 1063) throw e;
 			}
+			return null;
+		}
+		public static function encode(data:*):String {
+			if (data == null) return "null";
+			var ret:ByteArray = strArrE, c:String;
+			ret.position = 0;
+			if ("toJSON" in data) if (data.toJSON is Function) {
+				c = tryToJSON(data);
+				if (c != null) return handleStringE(c, false);
+			}
 			if (data is Function) return "null";
 			if (data is String) {
-				return handleStringE(data, false);
+				handleStringE2(data, ret, false);
 			} else if (data is XML) {
-				return handleStringE(data.toXMLString(), false);
+				handleStringE2(data.toXMLString(), ret, false);
 			} else if (data is Number) {
-				if ((data * 0) != 0) return "0";
-				return data.toString(10);
+				if ((data * 0) != 0) data = 0;
+				ret.writeUTFBytes(String(data));
 			} else if (data is Boolean) {
-				return data ? "true" : "false";
+				ret.writeUTFBytes(String(data));
 			} else if (data is Date) {
-				return data.getTime();
-			} else if (data is Array || getQualifiedClassName(data).indexOf("AS3.vec:") == 0) {
-				for each(var i:* in data) {
-					ret += encode(i) + ",";
+				ret.writeUTFBytes(String(data.getTime()));
+			} else if (data is Array || getQualifiedClassName(data).indexOf("__AS3__.vec::Vector.<") == 0) {
+				var i:int, e:int = data.length - 1;
+				ret.writeByte(0x5B); // [
+				if (e > 0) {
+					if (e & 1) encode2(data[i++]), ret.writeByte(0x2C); // ,
+					e >>>= 1;
+					while (e--) {
+						encode2(data[i++]);
+						ret.writeByte(0x2C); // ,
+						encode2(data[i++]);
+						ret.writeByte(0x2C); // ,
+					}
+					encode2(data[i]);
+				} else if (!e) {
+					encode2(data[i]);
 				}
-				return "[" + ret.substr(0, -1) + "]";
+				ret.writeByte(0x5D); // ]
 			} else if (data is Dictionary) {
+				ret.writeByte(0x7B); // {
 				for (var b:* in data) {
-					if (b is String) ret += handleStringE(b) + encode(data[b]) + ",";
-					else if (b is Number) ret += handleStringE(b.toString(10)) + encode(data[b]) + ",";
-					else if (b is Date) ret += handleStringE(b.getTime().toString(10)) + encode(data[b]) + ",";
-					else if (b is XML) ret += handleStringE(b.toXMLString()) + encode(data[b]) + ",";
-					else if (b is Boolean) ret += (data ? '"true":' : '"false":') + encode(data[b]) + ",";
+					if (b is String) handleStringE2(b, ret), encode2(data[b]), ret.writeByte(0x2C);
+					else if (b is Number) handleStringE2(String(b), ret), encode2(data[b]), ret.writeByte(0x2C);
+					else if (b is Date) handleStringE2(String(b.getTime()), ret), encode2(data[b]), ret.writeByte(0x2C);
+					else if (b is XML) handleStringE2(b.toXMLString(), ret), encode2(data[b]), ret.writeByte(0x2C);
+					else if (b is Boolean) handleStringE2(String(b), ret), encode2(data[b]), ret.writeByte(0x2C);
 				}
-				return "{" + ret.substr(0, -1) + "}";
+				if (b !== undefined) ret.position--;
+				ret.writeByte(0x7D); // }
 			} else if (data is Object) {
+				ret.writeByte(0x7B); // {
 				for (c in data) {
-					ret += handleStringE(c) + encode(data[c]) + ",";
+					handleStringE2(c, ret), encode2(data[c]), ret.writeByte(0x2C);
 				}
-				return "{" + ret.substr(0, -1) + "}";
+				if (c != null) ret.position--;
+				ret.writeByte(0x7D); // }
+			} else return "null";
+			i = ret.position;
+			ret.position = 0;
+			c = ret.readUTFBytes(i);
+			ret.length = 0;
+			return c;
+		}
+		private static function encode2(data:*):void {
+			var ret:ByteArray = strArrE, c:String;
+			if (data == null) {
+				ret.writeUTFBytes("null");
+				return;
 			}
-			return "null";
+			if ("toJSON" in data) if (data.toJSON is Function) {
+				c = tryToJSON(data);
+				if (c != null) {
+					handleStringE2(c, ret);
+					return;
+				}
+			}
+			if (data is Function) ret.writeUTFBytes("null");
+			else if (data is String) {
+				handleStringE2(data, ret, false);
+			} else if (data is XML) {
+				handleStringE2(data.toXMLString(), ret, false);
+			} else if (data is Number) {
+				if ((data * 0) != 0) data = 0;
+				ret.writeUTFBytes(String(data));
+			} else if (data is Boolean) {
+				ret.writeUTFBytes(String(data));
+			} else if (data is Date) {
+				ret.writeUTFBytes(String(data.getTime()));
+			} else if (data is Array || getQualifiedClassName(data).indexOf("__AS3__.vec::Vector.<") == 0) {
+				var i:int, e:int = data.length - 1;
+				ret.writeByte(0x5B); // [
+				if (e > 0) {
+					if (e & 1) encode2(data[i++]), ret.writeByte(0x2C); // ,
+					e >>>= 1;
+					while (e--) {
+						encode2(data[i++]);
+						ret.writeByte(0x2C); // ,
+						encode2(data[i++]);
+						ret.writeByte(0x2C); // ,
+					}
+					encode2(data[i]);
+				} else if (!e) {
+					encode2(data[i]);
+				}
+				ret.writeByte(0x5D); // ]
+			} else if (data is Dictionary) {
+				ret.writeByte(0x7B); // {
+				for (var b:* in data) {
+					if (b is String) handleStringE2(b, ret), encode2(data[b]), ret.writeByte(0x2C);
+					else if (b is Number) handleStringE2(String(b), ret), encode2(data[b]), ret.writeByte(0x2C);
+					else if (b is Date) handleStringE2(String(b.getTime()), ret), encode2(data[b]), ret.writeByte(0x2C);
+					else if (b is XML) handleStringE2(b.toXMLString(), ret), encode2(data[b]), ret.writeByte(0x2C);
+					else if (b is Boolean) handleStringE2(String(b), ret), encode2(data[b]), ret.writeByte(0x2C);
+				}
+				if (b !== undefined) ret.position--;
+				ret.writeByte(0x7D); // }
+			} else if (data is Object) {
+				ret.writeByte(0x7B); // {
+				for (c in data) {
+					handleStringE2(c, ret), encode2(data[c]), ret.writeByte(0x2C);
+				}
+				if (c != null) ret.position--;
+				ret.writeByte(0x7D); // }
+			} else ret.writeUTFBytes("null");
 		}
 		public static function get index():int {
 			return i;
@@ -171,7 +266,7 @@ package skyboy.text {
 			return a < b ? a : b;
 		}
 		private static function handleStringE(data:String, colon:Boolean = true):String {
-			var rtn:Array = strArr, inx:int, c:int, i:int;
+			var rtn:ByteArray = strArr, inx:int, c:int, i:int;
 			var e:int = data.length, t:int;
 			if (e == 0) return "";
 			rtn.length = min(e * 5 + 3, 0xFFFFFF);
@@ -204,10 +299,50 @@ package skyboy.text {
 			}
 			rtn[inx++] = 0x22;
 			if (colon) rtn[inx++] = 0x3A;
-			return ((rtn.length = inx), String.fromCharCode.apply(0, rtn));
+			rtn.position = 0;
+			data = rtn.readUTFBytes(inx);
+			rtn.length = 0;
+			return data;
+		}
+		private static function handleStringE2(data:String, rtn:ByteArray, colon:Boolean = true):void {
+			if (!rtn) return;
+			var inx:int = rtn.position, c:int, i:int;
+			var e:int = data.length, t:int;
+			if (e == 0) return;
+			rtn.length = min(e * 5 + 3, 0xFFFFFF);
+			rtn[inx++] = 0x22;
+			while (i != e) {
+				c = data.charCodeAt(i++);
+				if (c < 32 || c > 127) {
+					if (c > 0xFFFF) c = 0xFFFF;
+					rtn[inx++] = 0x5C;
+					rtn[inx++] = 0x75;
+					t = ((c & 0xF000) >> 12) + 0x30;
+					if (t > 0x39) t += 7;
+					rtn[inx++] = t;
+					t = ((c & 0xF00) >> 8) + 0x30;
+					if (t > 0x39) t += 7;
+					rtn[inx++] = t;
+					t = ((c & 0xF0) >> 4) + 0x30;
+					if (t > 0x39) t += 7;
+					rtn[inx++] = t;
+					t = (c & 15) + 0x30;
+					if (t > 0x39) t += 7;
+					rtn[inx++] = t;
+					continue;
+				} else if (c == 0x22 || c == 0x5C) {
+					rtn[inx++] = 0x5C;
+					rtn[inx++] = c;
+					continue;
+				}
+				rtn[inx++] = c;
+			}
+			rtn[inx++] = 0x22;
+			if (colon) rtn[inx++] = 0x3A;
+			rtn.position = inx;
 		}
 		private static function handleString(data:String, e:int):String {
-			var rtn:Array = strArr, inx:int, t:int, a:int = i;
+			var rtn:ByteArray = strArr, inx:int, t:int, a:int = i;
 			var iN:Boolean, c:int, end:int = data.charCodeAt(i), p:int;
 			rtn.length = e;
 			while (a != e) {
@@ -313,7 +448,8 @@ package skyboy.text {
 				rtn[inx++] = c;
 			}
 			i = a;
-			return inx ? ((rtn.length = inx), String.fromCharCode.apply(0, rtn)) : "";
+			rtn.position = 0;
+			return rtn.readUTFBytes(inx);
 		}
 		private static function handleNumber2(data:String, e:int):Number {
 			var a:int = i, c:int = data.charCodeAt(a), r:Number = 0, t:int = 1;
@@ -433,7 +569,7 @@ package skyboy.text {
 					}
 				}
 			}
-			error(data, i, "Expected true, false or null.");
+			error(data, i-3, "Expected true, false or null.");
 		}
 		private static function handleArray(data:String, e:int):Array {
 			var rtn:Array = preArrs.pop(), c:int, inx:int, p:Boolean = true;
