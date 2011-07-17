@@ -57,14 +57,14 @@ package skyboy.serialization {
 		public function JSON() {
 			throw new Error("This class has no instance methods.")
 		}
-		private static var i:int;
 		private static const preArrs:Vector.<Array> = new Vector.<Array>();
 		private static const preObjs:Vector.<Object> = new Vector.<Object>();
-		private static const strArr:ByteArray = new ByteArray();strArr.length = 0xFFFF;
-		private static const strArrE:ByteArray = new ByteArray();strArrE.length = 0xFFFF;
-		public static function parse(data:String):* {
-			return decode(data);
-		}
+		private static const strArr:ByteArray = new ByteArray(); strArr.length = 0xFFFF;
+		private static const strArrE:ByteArray = new ByteArray(); strArrE.length = 0xFFFF;
+		private static var i:int;
+		
+		public static const errorID:int = 0x4A534F4E;
+		
 		public static function decode(data:String):* {
 			if (data == null) {
 				return null;
@@ -104,6 +104,14 @@ package skyboy.serialization {
 			strArr.length = 0;
 			return rtn;
 		}
+		public static function parse(data:String):* {
+			return decode(data);
+		}
+		public static function get index():int {
+			return i;
+		}
+		
+		
 		private static function tryToJSON(data:*):String {
 			try {
 				return data.toJSON() as String;
@@ -111,68 +119,6 @@ package skyboy.serialization {
 				if (e.errorID != 1063) throw e;
 			}
 			return null;
-		}
-		public static function encode(data:*):String {
-			if (data == null) return "null";
-			var ret:ByteArray = strArrE, c:String;
-			ret.position = 0;
-			if ("toJSON" in data) if (data.toJSON is Function) {
-				c = tryToJSON(data);
-				if (c != null) return handleStringE(c, false);
-			}
-			if (data is Function) return "null";
-			if (data is String) {
-				handleStringE2(data, ret, false);
-			} else if (data is XML) {
-				handleStringE2(data.toXMLString(), ret, false);
-			} else if (data is Number) {
-				if ((data * 0) != 0) data = 0;
-				ret.writeUTFBytes(String(data));
-			} else if (data is Boolean) {
-				ret.writeUTFBytes(String(data));
-			} else if (data is Date) {
-				ret.writeUTFBytes(String(data.getTime()));
-			} else if (data is Array || getQualifiedClassName(data).indexOf("__AS3__.vec::Vector.<") == 0) {
-				var i:int, e:int = data.length - 1;
-				ret.writeByte(0x5B); // [
-				if (e > 0) {
-					if (e & 1) encode2(data[i++]), ret.writeByte(0x2C); // ,
-					e >>>= 1;
-					while (e--) {
-						encode2(data[i++]);
-						ret.writeByte(0x2C); // ,
-						encode2(data[i++]);
-						ret.writeByte(0x2C); // ,
-					}
-					encode2(data[i]);
-				} else if (!e) {
-					encode2(data[i]);
-				}
-				ret.writeByte(0x5D); // ]
-			} else if (data is Dictionary) {
-				ret.writeByte(0x7B); // {
-				for (var b:* in data) {
-					if (b is String) handleStringE2(b, ret), encode2(data[b]), ret.writeByte(0x2C);
-					else if (b is Number) handleStringE2(String(b), ret), encode2(data[b]), ret.writeByte(0x2C);
-					else if (b is Date) handleStringE2(String(b.getTime()), ret), encode2(data[b]), ret.writeByte(0x2C);
-					else if (b is XML) handleStringE2(b.toXMLString(), ret), encode2(data[b]), ret.writeByte(0x2C);
-					else if (b is Boolean) handleStringE2(String(b), ret), encode2(data[b]), ret.writeByte(0x2C);
-				}
-				if (b !== undefined) ret.position--;
-				ret.writeByte(0x7D); // }
-			} else if (data is Object) {
-				ret.writeByte(0x7B); // {
-				for (c in data) {
-					handleStringE2(c, ret), encode2(data[c]), ret.writeByte(0x2C);
-				}
-				if (c != null) ret.position--;
-				ret.writeByte(0x7D); // }
-			} else return "null";
-			i = ret.position;
-			ret.position = 0;
-			c = ret.readUTFBytes(i);
-			ret.length = 0;
-			return c;
 		}
 		private static function encode2(data:*):void {
 			var ret:ByteArray = strArrE, c:String;
@@ -190,8 +136,6 @@ package skyboy.serialization {
 			if (data is Function) ret.writeUTFBytes("null");
 			else if (data is String) {
 				handleStringE2(data, ret, false);
-			} else if (data is XML) {
-				handleStringE2(data.toXMLString(), ret, false);
 			} else if (data is Number) {
 				if ((data * 0) != 0) data = 0;
 				ret.writeUTFBytes(String(data));
@@ -227,6 +171,8 @@ package skyboy.serialization {
 				}
 				if (b !== undefined) ret.position--;
 				ret.writeByte(0x7D); // }
+			} else if (data is XML) {
+				handleStringE2(data.toXMLString(), ret, false);
 			} else if (data is Object) {
 				ret.writeByte(0x7B); // {
 				for (c in data) {
@@ -236,15 +182,80 @@ package skyboy.serialization {
 				ret.writeByte(0x7D); // }
 			} else ret.writeUTFBytes("null");
 		}
-		public static function get index():int {
-			return i;
+		public static function encode(data:*):String {
+			if (data == null) return "null";
+			var ret:ByteArray = strArrE, c:String;
+			ret.position = 0;
+			if ("toJSON" in data) if (data.toJSON is Function) {
+				c = tryToJSON(data);
+				if (c != null) return handleStringE(c, false);
+			}
+			if (data is Function) return "null";
+			if (data is String) {
+				handleStringE2(data, ret, false);
+			} else if (data is Number) {
+				if ((data * 0) != 0) data = 0;
+				ret.writeUTFBytes(String(data));
+			} else if (data is Boolean) {
+				ret.writeUTFBytes(String(data));
+			} else if (data is Date) {
+				ret.writeUTFBytes(String(data.getTime()));
+			} else if (data is Array || getQualifiedClassName(data).indexOf("__AS3__.vec::Vector.<") == 0) {
+				var i:int, e:int = data.length - 1;
+				ret.writeByte(0x5B); // [
+				if (e > 0) {
+					if (e & 1) encode2(data[i++]), ret.writeByte(0x2C); // ,
+					e >>>= 1;
+					while (e--) {
+						encode2(data[i++]);
+						ret.writeByte(0x2C); // ,
+						encode2(data[i++]);
+						ret.writeByte(0x2C); // ,
+					}
+					encode2(data[i]);
+				} else if (!e) {
+					encode2(data[i]);
+				}
+				ret.writeByte(0x5D); // ]
+			} else if (data is Dictionary) {
+				ret.writeByte(0x7B); // {
+				for (var b:* in data) {
+					if (b is String) handleStringE2(b, ret), encode2(data[b]), ret.writeByte(0x2C);
+					else if (b is Number) handleStringE2(String(b), ret), encode2(data[b]), ret.writeByte(0x2C);
+					else if (b is Date) handleStringE2(String(b.getTime()), ret), encode2(data[b]), ret.writeByte(0x2C);
+					else if (b is XML) handleStringE2(b.toXMLString(), ret), encode2(data[b]), ret.writeByte(0x2C);
+					else if (b is Boolean) handleStringE2(String(b), ret), encode2(data[b]), ret.writeByte(0x2C);
+				}
+				if (b !== undefined) ret.position--;
+				ret.writeByte(0x7D); // }
+			} else if (data is XML) {
+				handleStringE2(data.toXMLString(), ret, false);
+			} else if (data is Object) {
+				ret.writeByte(0x7B); // {
+				for (c in data) {
+					handleStringE2(c, ret), encode2(data[c]), ret.writeByte(0x2C);
+				}
+				if (c != null) ret.position--;
+				ret.writeByte(0x7D); // }
+			} else return "null";
+			i = ret.position;
+			ret.position = 0;
+			c = ret.readUTFBytes(i);
+			ret.length = 0;
+			return c;
+		}
+		public static function stringify(data:*):String {
+			return encode(data);
+		}
+		public static function toJSON(data:* = null):String {
+			return encode(data);
 		}
 		
 		private static function isSpace(i:int):Boolean {
-			return i == 0x20 || i == 0x09;
+			return Boolean(int(i == 0x20) | int(i == 0x09));
 		}
 		private static function isString(i:int):Boolean {
-			return i == 0x22 || i == 0x27;
+			return Boolean(int(i == 0x22) | int(i == 0x27));
 		}
 		private static function isObject(i:int):Boolean {
 			return i == 0x7B;
@@ -253,17 +264,19 @@ package skyboy.serialization {
 			return i == 0x5B;
 		}
 		private static function isNumber(i:int):Boolean {
-			return i == 0x2D || i == 0x2E || (i > 0x2F && i < 0x3A) || i == 0x2B;
+			return Boolean(int(i == 0x2D) | int(i == 0x2E) | (int(i > 0x2F) & int(i < 0x3A)) | int(i == 0x2B));
 		}
 		private static function isNumeric(i:int):Boolean {
-			return i > 0x2F && i < 0x3A;
+			return Boolean(int(i > 0x2F) & int(i < 0x3A));
 		}
 		private static function isLit(i:int):Boolean {
 			i |= 0x20;
-			return i == 0x74 || i == 0x66 || i == 0x6E;
+			return Boolean(int(i == 0x74) | int(i == 0x66) | int(i == 0x6E));
 		}
+		
 		private static function min(a:Number, b:Number):Number {
-			return a < b ? a : b;
+			var c:int = int(a < b);
+			return (c * a) + ((1 - c) * b); // fast a < b ? a : b;
 		}
 		private static function handleStringE(data:String, colon:Boolean = true):String {
 			var rtn:ByteArray = strArr, inx:int, c:int, i:int;
@@ -273,24 +286,24 @@ package skyboy.serialization {
 			rtn[inx++] = 0x22;
 			while (i != e) {
 				c = data.charCodeAt(i++);
-				if (c < 32 || c > 127) {
+				if (int(c < 32) | int(c > 127)) {
 					if (c > 0xFFFF) c = 0xFFFF;
 					rtn[inx++] = 0x5C;
 					rtn[inx++] = 0x75;
 					t = ((c & 0xF000) >> 12) + 0x30;
-					if (t > 0x39) t += 7;
+					t += 7 * int(t > 0x39);
 					rtn[inx++] = t;
 					t = ((c & 0xF00) >> 8) + 0x30;
-					if (t > 0x39) t += 7;
+					t += 7 * int(t > 0x39);
 					rtn[inx++] = t;
 					t = ((c & 0xF0) >> 4) + 0x30;
-					if (t > 0x39) t += 7;
+					t += 7 * int(t > 0x39);
 					rtn[inx++] = t;
 					t = (c & 15) + 0x30;
-					if (t > 0x39) t += 7;
+					t += 7 * int(t > 0x39);
 					rtn[inx++] = t;
 					continue;
-				} else if (c == 0x22 || c == 0x5C) {
+				} else if (int(c == 0x22) | int(c == 0x5C)) {
 					rtn[inx++] = 0x5C;
 					rtn[inx++] = c;
 					continue;
@@ -313,24 +326,24 @@ package skyboy.serialization {
 			rtn[inx++] = 0x22;
 			while (i != e) {
 				c = data.charCodeAt(i++);
-				if (c < 32 || c > 127) {
+				if (int(c < 32) | int(c > 127)) {
 					if (c > 0xFFFF) c = 0xFFFF;
 					rtn[inx++] = 0x5C;
 					rtn[inx++] = 0x75;
 					t = ((c & 0xF000) >> 12) + 0x30;
-					if (t > 0x39) t += 7;
+					t += 7 * int(t > 0x39);
 					rtn[inx++] = t;
 					t = ((c & 0xF00) >> 8) + 0x30;
-					if (t > 0x39) t += 7;
+					t += 7 * int(t > 0x39);
 					rtn[inx++] = t;
 					t = ((c & 0xF0) >> 4) + 0x30;
-					if (t > 0x39) t += 7;
+					t += 7 * int(t > 0x39);
 					rtn[inx++] = t;
 					t = (c & 15) + 0x30;
-					if (t > 0x39) t += 7;
+					t += 7 * int(t > 0x39);
 					rtn[inx++] = t;
 					continue;
-				} else if (c == 0x22 || c == 0x5C) {
+				} else if (int(c == 0x22) | int(c == 0x5C)) {
 					rtn[inx++] = 0x5C;
 					rtn[inx++] = c;
 					continue;
@@ -515,7 +528,7 @@ package skyboy.serialization {
 					if (isNumeric(c)) {
 						r = (r * 10) + (c - 0x30);
 						continue;
-					} else if (isSpace(c) || c == 0x2C || c == 0x5D || c == 0x7D) {
+					} else if (int(isSpace(c)) | int(c == 0x2C) | int(c == 0x5D) | int(c == 0x7D)) {
 						i = a - 1;
 						return n ? r * -1.0 : r;
 					}
@@ -528,7 +541,7 @@ package skyboy.serialization {
 					if (isNumeric(c)) {
 						r += (c - 0x30) / (t *= 10);
 						continue;
-					} else if (isSpace(c) || c == 0x2C || c == 0x5D || c == 0x7D) {
+					} else if (int(isSpace(c)) | int(c == 0x2C) | int(c == 0x5D) | int(c == 0x7D)) {
 						i = a - 1;
 						return n ? r * -1.0 : r;
 					}
@@ -547,16 +560,22 @@ package skyboy.serialization {
 						if (d == 0x6C) {
 							return null;
 						}
+						error(data, i-1, "Expected 'l' after nul.");
 					}
+					error(data, i-2, "Expected 'l' after nu.");
 				}
+				error(data, i-3, "Expected 'u' after n.");
 			} else if (a == 0x74) {
 				if (b == 0x72) {
 					if (c == 0x75) {
 						if (d == 0x65) {
 							return true
 						}
+						error(data, i-1, "Expected 'e' after tur.");
 					}
+					error(data, i-2, "Expected 'r' after tu.");
 				}
+				error(data, i-3, "Expected 'u' after t.");
 			} else if (a == 0x66) {
 				if (b == 0x61) {
 					if (c == 0x6C) {
@@ -564,12 +583,14 @@ package skyboy.serialization {
 							if ((data.charCodeAt(++i) | 0x20) == 0x65) {
 								return false;
 							}
-							--i;
+							error(data, i-1, "Expected 'e' after fals.");
 						}
+						error(data, i-1, "Expected 's' after fal.");
 					}
+					error(data, i-2, "Expected 'l' after fa.");
 				}
+				error(data, i-3, "Expected 'a' after f.");
 			}
-			error(data, i-3, "Expected true, false or null.");
 		}
 		private static function handleArray(data:String, e:int):Array {
 			var rtn:Array = preArrs.pop(), c:int, inx:int, p:Boolean = true;
@@ -664,7 +685,7 @@ package skyboy.serialization {
 			return rtn;
 		}
 		private static function error(data:String, i:int, e:String = null):void {
-			throw new Error ("Malformed JSON at char: " + i + ", " + data.charAt(i) + (e ? ". " + e : '.'));
+			throw new Error("Malformed JSON at char: " + i + ", " + data.charAt(i) + (e ? ". " + e : '.'), errorID);
 		}
 	}
 }
