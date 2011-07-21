@@ -17,5 +17,7 @@ package skyboy.interfaces.tabbar {
 		function deselect():void;
 		function close():void;
 		function closed():Boolean;
+		function closeable():Boolean;
+		function pointCloses(x:Number, y:Number):Boolean;
 	}
 }

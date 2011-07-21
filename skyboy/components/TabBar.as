@@ -110,20 +110,20 @@ package skyboy.components {
 					}
 				}
 			} else {
-				tab = items[len - 1] as ITab;
+				while (!tab && len) tab = items[--len] as ITab;
 				if (tab) {
+					if (tab.closeable()) {
+						if (tab.pointCloses(e.stageX, e.stageY)) {
+							removeTab(tab);
+							return;
+						}
+					}
 					if (tab != selectedTab) {
 						if (selectedTab) selectedTab.deselect();
 						tab.lastTab = selectedTab;
 						tab.select();
 						selectedTab = tab;
 						scroll(tab);
-					}
-				} else if (len > 1 && items[len - 2] is ITab) {
-					tab = items[len - 2] as ITab;
-					button = items[len - 1] as IButton;
-					if (button && button.enabled()) { // close button is clicked
-						removeTab(tab);
 					}
 				}
 			}
