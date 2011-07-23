@@ -1,5 +1,6 @@
 package skyboy.serialization {
 	import flash.utils.ByteArray;
+	import flash.utils.Endian;
 	import flash.utils.getQualifiedClassName;
 	import flash.utils.Dictionary;
 	/**
@@ -53,40 +54,66 @@ package skyboy.serialization {
 	 * IN ANY OTHER WAY OUT OF THE USE OF OR OTHER DEALINGS WITH THIS
 	 * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 	 */
-	public class JSON {
+	final public class JSON {
+		private static const instance:JSON = new JSON();
 		public function JSON() {
-			throw new Error("This class has no instance methods.")
+			if (instance) throw new Error("This class has no instance methods.")
+			strArr.length = 0xFFFF; strArr.endian = Endian.LITTLE_ENDIAN;
+			strArrE.length = 0xFFFF; strArrE.endian = Endian.BIG_ENDIAN;
+			var i:int = 0x10000;
+			while (i--) {
+				encRL[i] = (0x30303030 | ((i & 0xF000) << 12) | ((i & 0xF00) << 8) | ((i & 0xF0) << 4) | (i & 0xF)) +
+				(((int((i & 0xF000) > 0x9000) * 0x7000) << 12) |
+				((int((i & 0xF00) > 0x900) * 0x700) << 8) |
+				((int((i & 0xF0) > 0x90) * 0x70) << 4) |
+				((int((i & 0xF) > 0x9) * 0x7)));
+			}
+			i = 0x100;
+			while (i--) {
+				encD[i] = i;
+			}
+			encD[0x62] = 8;
+			encD[0x66] = 12;
+			encD[0x6E] = 10;
+			encD[0x72] = 13;
+			encD[0x74] = 9;
 		}
-		private static const preArrs:Vector.<Array> = new Vector.<Array>();
-		private static const preObjs:Vector.<Object> = new Vector.<Object>();
-		private static const strArr:ByteArray = new ByteArray(); strArr.length = 0xFFFF;
-		private static const strArrE:ByteArray = new ByteArray(); strArrE.length = 0xFFFF;
-		private static var i:int;
+		private const preArrs:Vector.<Array> = new Vector.<Array>();
+		private const preObjs:Vector.<Object> = new Vector.<Object>();
+		private const strArr:ByteArray = new ByteArray();
+		private const strArrE:ByteArray = new ByteArray();
+		private const encRL:Vector.<int> = new Vector.<int>(0x10000, true);
+		private const encD:Vector.<int> = new Vector.<int>(0x100, true);
+		private var i:int;
 		
 		public static const errorID:int = 0x4A534F4E;
 		
-		public static function decode(data:String):* {
-			if (data == null) {
-				return null;
-			}
+		private function decode(data:String):* {
+			if (!data) return null;
 			data = data.valueOf();
-			var e:int = data.length;
-			if (e == 0) return null;
-			var temp:int, objs:int = -preObjs.length;
-			while ((temp = data.indexOf("}", temp + 1)) !== -1) ++objs;
+			var e:int = data.length, temp:int;
+			var preObjs:Vector.<Object> = preObjs, preArrs:Vector.<Array> = preArrs;
+			var objs:int = -preObjs.length, o2:int = -objs;
+			while (~(temp = data.indexOf("}", temp + 1))) ++objs;
 			if (objs > 0) {
+				objs += o2;
 				preObjs.length = objs;
-				while (objs-- > 0) preObjs[objs] = new Object;
+				while (o2 < objs) preObjs[o2++] = new Object;
 			}
-			objs = temp = 0;
-			while ((temp = data.indexOf("]", temp + 1)) !== -1) ++objs;
-			preArrs.length = objs;
-			while (objs-- > 0) preArrs[objs] = new Array(e);
+			o2 = preArrs.length
+			objs = -o2;
+			temp = 0;
+			while (~(temp = data.indexOf("]", temp + 1))) ++objs;
+			if (objs > 0) {
+				objs += o2;
+				preArrs.length = objs;
+				temp = e / objs;
+				while (o2 < objs) preArrs[o2++] = new Array(temp);
+			}
+			strArr.length = e;
 			var c:int = data.charCodeAt(i = 0);
-			if (isSpace(c)) {
-				do {
-					c = data.charCodeAt(++i);
-				} while (isSpace(c) && i != e);
+			while (isSpace(c)) {
+				c = data.charCodeAt(++i);
 			}
 			var rtn:*;
 			if (isObject(c)) {
@@ -98,21 +125,21 @@ package skyboy.serialization {
 			} else if (isNumber(c)) {
 				rtn = handleNumber2(data, e);
 			} else if (isLit(c)) {
-				return handleLit(data, e);
-			}
-			if (rtn === undefined) error(data, i);
-			strArr.length = 0;
+				rtn = handleLit(data, e);
+			} else  error(data, i);
 			return rtn;
 		}
+		public static function decode(data:String):* {
+			return instance.decode(data);
+		}
 		public static function parse(data:String):* {
-			return decode(data);
+			return instance.decode(data);
 		}
 		public static function get index():int {
-			return i;
+			return instance.i;
 		}
 		
-		
-		private static function tryToJSON(data:*):String {
+		private function tryToJSON(data:*):String {
 			try {
 				return data.toJSON() as String;
 			} catch (e:ArgumentError) {
@@ -120,7 +147,7 @@ package skyboy.serialization {
 			}
 			return null;
 		}
-		private static function encode2(data:*):void {
+		private function encode2(data:*):void {
 			var ret:ByteArray = strArrE, c:String;
 			if (data == null) {
 				ret.writeUTFBytes("null");
@@ -182,7 +209,7 @@ package skyboy.serialization {
 				ret.writeByte(0x7D); // }
 			} else ret.writeUTFBytes("null");
 		}
-		public static function encode(data:*):String {
+		private function encode(data:*):String {
 			if (data == null) return "null";
 			var ret:ByteArray = strArrE, c:String;
 			ret.position = 0;
@@ -244,52 +271,56 @@ package skyboy.serialization {
 			ret.length = 0;
 			return c;
 		}
+		public static function encode(data:*):String {
+			return instance.encode(data);
+		}
 		public static function stringify(data:*):String {
-			return encode(data);
+			return instance.encode(data);
 		}
 		public static function toJSON(data:* = null):String {
-			return encode(data);
+			return instance.encode(data);
 		}
 		
-		private static function isSpace(i:int):Boolean {
+		private function isSpace(i:int):Boolean {
 			return Boolean(int(i == 0x20) | int(i == 0x09));
 		}
-		private static function isString(i:int):Boolean {
+		private function isString(i:int):Boolean {
 			return Boolean(int(i == 0x22) | int(i == 0x27));
 		}
-		private static function isObject(i:int):Boolean {
+		private function isObject(i:int):Boolean {
 			return i == 0x7B;
 		}
-		private static function isArray(i:int):Boolean {
+		private function isArray(i:int):Boolean {
 			return i == 0x5B;
 		}
-		private static function isNumber(i:int):Boolean {
+		private function isNumber(i:int):Boolean {
 			return Boolean(int(i == 0x2D) | int(i == 0x2E) | (int(i > 0x2F) & int(i < 0x3A)) | int(i == 0x2B));
 		}
-		private static function isNumeric(i:int):Boolean {
+		private function isNumeric(i:int):Boolean {
 			return Boolean(int(i > 0x2F) & int(i < 0x3A));
 		}
-		private static function isLit(i:int):Boolean {
+		private function isLit(i:int):Boolean {
 			i |= 0x20;
 			return Boolean(int(i == 0x74) | int(i == 0x66) | int(i == 0x6E));
 		}
 		
-		private static function min(a:Number, b:Number):Number {
+		private function min(a:Number, b:Number):Number {
 			var c:int = int(a < b);
 			return (c * a) + ((1 - c) * b); // fast a < b ? a : b;
 		}
-		private static function handleStringE(data:String, colon:Boolean = true):String {
-			var rtn:ByteArray = strArr, inx:int, c:int, i:int;
+		private function handleStringE(data:String, colon:Boolean = true):String {
+			var rtn:ByteArray = strArrE, c:int, i:int;
 			var e:int = data.length, t:int;
-			if (e == 0) return "";
-			rtn.length = min(e * 5 + 3, 0xFFFFFF);
-			rtn[inx++] = 0x22;
-			while (i != e) {
+			var enc:Vector.<int> = encRL;
+			rtn.writeByte(0x22);
+			while (i < e) {
 				c = data.charCodeAt(i++);
-				if (int(c < 32) | int(c > 127)) {
-					if (c > 0xFFFF) c = 0xFFFF;
-					rtn[inx++] = 0x5C;
-					rtn[inx++] = 0x75;
+				if (int(c < 32) | int(c > 126)) {
+					t = int(c > 0xFFFF)
+					rtn.writeShort(0x5C75);
+					c = (t * 0xFFFF) | ((1 - t) * c);
+					rtn.writeInt(enc[c]);
+					/*
 					t = ((c & 0xF000) >> 12) + 0x30;
 					t += 7 * int(t > 0x39);
 					rtn[inx++] = t;
@@ -301,35 +332,34 @@ package skyboy.serialization {
 					rtn[inx++] = t;
 					t = (c & 15) + 0x30;
 					t += 7 * int(t > 0x39);
-					rtn[inx++] = t;
+					rtn[inx++] = t;//*/
 					continue;
 				} else if (int(c == 0x22) | int(c == 0x5C)) {
-					rtn[inx++] = 0x5C;
-					rtn[inx++] = c;
-					continue;
+					rtn.writeByte(0x5C);
 				}
-				rtn[inx++] = c;
+				rtn.writeByte(c);
 			}
-			rtn[inx++] = 0x22;
-			if (colon) rtn[inx++] = 0x3A;
+			rtn.writeByte(0x22);
+			if (colon) rtn.writeByte(0x3A);
+			i = rtn.position;
 			rtn.position = 0;
-			data = rtn.readUTFBytes(inx);
+			data = rtn.readUTFBytes(i);
 			rtn.length = 0;
 			return data;
 		}
-		private static function handleStringE2(data:String, rtn:ByteArray, colon:Boolean = true):void {
-			if (!rtn) return;
-			var inx:int = rtn.position, c:int, i:int;
+		private function handleStringE2(data:String, rtn:ByteArray, colon:Boolean = true):void {
+			var c:int, i:int;
 			var e:int = data.length, t:int;
-			if (e == 0) return;
-			rtn.length = min(e * 5 + 3, 0xFFFFFF);
-			rtn[inx++] = 0x22;
-			while (i != e) {
+			var enc:Vector.<int> = encRL;
+			rtn.writeByte(0x22);
+			while (i < e) {
 				c = data.charCodeAt(i++);
-				if (int(c < 32) | int(c > 127)) {
-					if (c > 0xFFFF) c = 0xFFFF;
-					rtn[inx++] = 0x5C;
-					rtn[inx++] = 0x75;
+				if (int(c < 32) | int(c > 126)) {
+					t = int(c > 0xFFFF)
+					rtn.writeShort(0x5C75);
+					c = (t * 0xFFFF) | ((1 - t) * c);
+					rtn.writeInt(enc[c]);
+					/*
 					t = ((c & 0xF000) >> 12) + 0x30;
 					t += 7 * int(t > 0x39);
 					rtn[inx++] = t;
@@ -341,351 +371,334 @@ package skyboy.serialization {
 					rtn[inx++] = t;
 					t = (c & 15) + 0x30;
 					t += 7 * int(t > 0x39);
-					rtn[inx++] = t;
+					rtn[inx++] = t;//*/
 					continue;
 				} else if (int(c == 0x22) | int(c == 0x5C)) {
-					rtn[inx++] = 0x5C;
-					rtn[inx++] = c;
-					continue;
+					rtn.writeByte(0x5C);
 				}
-				rtn[inx++] = c;
+				rtn.writeByte(c);
 			}
-			rtn[inx++] = 0x22;
-			if (colon) rtn[inx++] = 0x3A;
-			rtn.position = inx;
+			rtn.writeByte(0x22);
+			if (colon) rtn.writeByte(0x3A);
 		}
-		private static function handleString(data:String, e:int):String {
-			var rtn:ByteArray = strArr, inx:int, t:int, a:int = i;
-			var iN:Boolean, c:int, end:int = data.charCodeAt(i), p:int;
-			rtn.length = e;
-			while (a != e) {
+		private function handleString(data:String, e:int):String {
+			var c:int, rtn:ByteArray = strArr, inx:int, a:int = i, end:int = data.charCodeAt(i);
+			var t:int, p:int, p1:int, p2:int;
+			var enc:Vector.<int> = encD;
+			rtn.position = 0;
+			const low:int = 0x7F;
+			while (a < e) {
 				c = data.charCodeAt(++a);
 				if (c == 0x5C) {
-					c = data.charCodeAt(++a);
-					t = 0;
-					switch (c) {
-					case 0x72:
-						c = 13;
-						break;
-					case 0x6E:
-						c = 10;
-						break;
-					case 0x74:
-						c = 9;
-						break;
-					case 0x66:
-						c = 12;
-						break;
-					case 0x62:
-						c = 8;
-						break;
-					case 0x75:
+					c = enc[data.charCodeAt(++a)]; // multi-byte characters will throw an error.
+					if (c == 0x75) {
+						t = data.charCodeAt(++a) - 0x30;
+						t -= (int(t > 9) * 7) | (int(t > 22) * 0x20);
+						p1 = data.charCodeAt(++a) - 0x30;
+						p1 -= (int(p1 > 9) * 7) | (int(p1 > 22) * 0x20);
+						p2 = data.charCodeAt(++a) - 0x30;
+						p2 -= (int(p2 > 9) * 7) | (int(p2 > 22) * 0x20);
 						p = data.charCodeAt(++a) - 0x30;
-						if (p > 9) {
-							p -= 7;
-							if (p > 15) {
-								p -= 0x20;
-							}
+						p -= (int(p > 9) * 7) | (int(p > 22) * 0x20);
+						if (uint(t | p1 | p2 | p) > uint(15)) { // comparing with uint instead of int means the <0 check is combined
+							error(data, a - 6, "Expected 0-F after \\u", 6);
 						}
-						if (p < 0 || p > 15) {
-							error(data, a, "Expected 0-F");
-						}
-						t = p << 4;
-					case 0x30:case 0x31:case 0x32:case 0x33:
-					case 0x34:case 0x35:case 0x36:case 0x37:
-						if (c == 0x75) {
-							p = data.charCodeAt(++a) - 0x30;
-						} else {
-							t = (c == 0x30 ? data.charCodeAt(++a) : c) - 0x30;
-							if (t > 7) {
-								if (c != 0x30) {
-									break;
-								}
-								c = 0;
-								--a;
-								break;
-							}
-							p = data.charCodeAt(++a) - 0x30;
-							if (p > 7) {
-								--a;
-								if (c != 0x30) {
-									break;
-								}
-								c = 0;
-								--a;
-								break;
-							}
-							c = (t << 3) | p;
-							break;
-						}
-						if (p > 9) {
-							p -= 7;
-							if (p > 15) {
-								p -= 0x20;
-							}
-						}
-						if (p < 0 || p > 15) {
-							error(data, a, "Expected 0-F");
-						}
-						t = (t | p) << 4;
-					case 0x78:
+						rtn.position = inx;
+						// 0xE00000 | ((i & 0xF000) << 4) | 0x8000 | ((i & 0xFC0) << 2) | 0x80 | (i & 0x3F)
+						p1 = (p1 << 2) | (p2 >> 2);
+						p = ((p2 << 2) | p) & 0x3F;
+						rtn.writeInt((0xE0 | t) | ((0x80 | p1) << 8) | ((0x80 | p) << 16));
+						++inx;
+						++inx;
+						++inx;
+						continue;
+					} else if (c == 0x78) {
+						t = data.charCodeAt(++a) - 0x30;
+						t -= (int(t > 9) * 7) | (int(t > 22) * 0x20);
 						p = data.charCodeAt(++a) - 0x30;
-						if (p > 9) {
-							p -= 7;
-							if (p > 15) {
-								p -= 0x20;
-							}
+						p -= (int(p > 9) * 7) | (int(p > 22) * 0x20);
+						if (uint(t | p) > uint(15)) { // comparing with uint instead of int means the <0 check is combined
+							error(data, a - 4, "Expected 0-F after \\x", 4);
 						}
-						if (p < 0 || p > 15) {
-							error(data, a, "Expected 0-F");
-						}
-						t = (t | p) << 4;
-						p = data.charCodeAt(++a) - 0x30;
-						if (p > 9) {
-							p -= 7;
-							if (p > 15) {
-								p -= 0x20;
-							}
-						}
-						if (p < 0 || p > 15) {
-							error(data, a, "Expected 0-F");
-						}
-						c = t | p;
-						break;
+						c = (t << 4) | p;
+						rtn.position = inx;
+						rtn.writeShort((0xC0 | ((c >> 6) & 0x1F)) | ((0x80 | (c & 0x3F)) << 8));
+						++inx;
+						++inx;
 					}
-					rtn[inx++] = c;
-					continue;
 				} else if (c == end) {
-					break;
+					i = a;
+					rtn.position = 0;
+					return rtn.readUTFBytes(inx);
+				} else if (c > low) {
+					return handleMBString(data, e, c, rtn, inx, a, end);
 				}
-				rtn[inx++] = c;
+				rtn[inx] = c;
+				++inx;
 			}
-			i = a;
-			rtn.position = 0;
-			return rtn.readUTFBytes(inx);
+			error(data, i, "Unterminated String.", 1);
+			return null; // not reached
 		}
-		private static function handleNumber2(data:String, e:int):Number {
-			var a:int = i, c:int = data.charCodeAt(a), r:Number = 0, t:int = 1;
-			var n:Boolean;
-			if (isSpace(c)) {
-				do {
-					c = data.charCodeAt(++a);
-				} while (isSpace(c) && i != e);
+		private function handleMBString(data:String, e:int, c:int, rtn:ByteArray, inx:int, a:int, end:int):String {
+			var t:int, p:int, p1:int, p2:int;
+			var enc:Vector.<int> = encD;
+			rtn.position = inx;
+			while (a < e) {
+				c = data.charCodeAt(++a);
+				if (c == 0x5C) {
+					c = enc[data.charCodeAt(++a)]; // multi-byte characters will throw an error.
+					if (c == 0x75) {
+						t = data.charCodeAt(++a) - 0x30;
+						t -= (int(t > 9) * 7) | (int(t > 22) * 0x20);
+						p1 = data.charCodeAt(++a) - 0x30;
+						p1 -= (int(p1 > 9) * 7) | (int(p1 > 22) * 0x20);
+						p2 = data.charCodeAt(++a) - 0x30;
+						p2 -= (int(p2 > 9) * 7) | (int(p2 > 22) * 0x20);
+						p = data.charCodeAt(++a) - 0x30;
+						p -= (int(p > 9) * 7) | (int(p > 22) * 0x20);
+						if (uint(t | p1 | p2 | p) > uint(15)) { // comparing with uint instead of int means the <0 check is combined
+							error(data, a - 6, "Expected 0-F after \\u", 6);
+						}
+						c = ((((((t << 4) | p1) << 4) | p2) << 4) | p);
+					} else if (c == 0x78) {
+						t = data.charCodeAt(++a) - 0x30;
+						t -= (int(t > 9) * 7) | (int(t > 22) * 0x20);
+						p = data.charCodeAt(++a) - 0x30;
+						p -= (int(p > 9) * 7) | (int(p > 22) * 0x20);
+						if (uint(t | p) > uint(15)) { // comparing with uint instead of int means the <0 check is combined
+							error(data, a - 4, "Expected 0-F after \\x", 4);
+						}
+						c = (t << 4) | p;
+					}
+				} else if (c == end) {
+					i = a;
+					inx = rtn.position;
+					rtn.position = 0;
+					return rtn.readUTFBytes(inx);
+				}
+				c = (0xF0 | ((c & 0x1C0000) >> 18)) | (0x8000 | ((c & 0x3F000) >> 4)) | 0x800000 | ((c & 0xFC0) << 10) | ((0x80 | (c & 0x3F)) << 16);
+				rtn.writeInt(c);
 			}
+			error(data, i, "Unterminated String.", 1);
+			return null;
+		}
+		private function handleNumber2(data:String, e:int):Number {
+			var a:int = i, c:int = data.charCodeAt(a), r:Number = 0, t:int = 1;
+			var n:int, ex:int, exn:int, d:Number = 10;
 			if (c == 0x2D) {
 				c = data.charCodeAt(++a);
-				n = true;
+				n = 2;
 			} else if (c == 0x2B) {
 				c = data.charCodeAt(++a);
 			}
 			if (isNumeric(c)) {
 				r = c - 0x30;
-				while (a != e) {
-					c = data.charCodeAt(++a);
-					if (isNumeric(c)) {
-						r = (r * 10) + (c - 0x30);
-					}
+				while (int(a < e) & (int(int(c = int(data.charCodeAt(++a))) > 0x2F) & int(c < 0x3A))) {
+					r = (r * 10) + (c - 0x30);
 				}
 			}
 			if (c == 0x2E) {
-				while (a != e) {
+				while (int(a < e) & (int(int(c = int(data.charCodeAt(++a))) > 0x2F) & int(c < 0x3A))) {
+					r += (c - 0x30) / (t *= 10);
+				}
+			}
+			if ((c | 0x20) == 0x65) {
+				c = data.charCodeAt(++a);
+				if (c == 0x2D) {
+					exn = 1;
 					c = data.charCodeAt(++a);
-					if (isNumeric(c)) {
-						r += (c - 0x30) / (t *= 10);
-					}
+				} else if (c == 0x2B) c = data.charCodeAt(++a);
+				t = 3;
+				while (int(c > 0x2F) & int(c < 0x3A) & int(Boolean(t--))) {
+					ex = (ex * 10) + (c - 0x30);
+					c = data.charCodeAt(++a);
+				}
+				while (int(c > 0x2F) & int(c < 0x3A)) c = data.charCodeAt(++a); // consume the remainder
+				t = 10;
+				if (exn) {
+					if (ex < 325) while (ex) {
+						r /= ((ex & 1) * t + (~ex & 1));
+						ex >>>= 1;
+						t *= t;
+						r /= ((ex & 1) * t + (~ex & 1));
+						ex >>>= 1;
+						t *= t;
+					} else r = 0; // >= 325 for negative exponents results in 0
+				} else {
+					if (ex < 309)while (ex) {
+						r *= ((ex & 1) * t + (~ex & 1));
+						ex >>>= 1;
+						t *= t;
+						r *= ((ex & 1) * t + (~ex & 1));
+						ex >>>= 1;
+						t *= t;
+					} else r = Infinity; // >= 309 for positive exponents results in Infinity
 				}
 			}
-			if (a != e) {
-				if (isSpace(c)) {
-					do {
-						c = data.charCodeAt(++i);
-					} while (isSpace(c) && a < e);
-				}
-				if (a != e) {
-					error(data, a, "Expected 0-9 or .");
+			if (a < e) {
+				while (isSpace(c)) c = data.charCodeAt(++a);
+				if (a < e) {
+					error(data, a);
 				}
 			}
-			return n ? r * -1.0 : r;
+			return (1 - n) * r;
 		}
-		private static function handleNumber(data:String, e:int):Number {
+		private function handleNumber(data:String, e:int):Number {
 			var a:int = i, c:int = data.charCodeAt(a), r:Number = 0, t:int = 1;
-			var n:Boolean;
-			if (isSpace(c)) {
-				do {
-					c = data.charCodeAt(++a);
-				} while (isSpace(c));
-			}
+			var n:int, ex:int, exn:int, d:Number = 10;
 			if (c == 0x2D) {
 				c = data.charCodeAt(++a);
-				n = true;
+				n = 2;
 			} else if (c == 0x2B) {
 				c = data.charCodeAt(++a);
 			}
 			if (isNumeric(c)) {
 				r = c - 0x30;
-				while (a != e) {
-					c = data.charCodeAt(++a);
-					if (isNumeric(c)) {
-						r = (r * 10) + (c - 0x30);
-						continue;
-					} else if (int(isSpace(c)) | int(c == 0x2C) | int(c == 0x5D) | int(c == 0x7D)) {
-						i = a - 1;
-						return n ? r * -1.0 : r;
-					}
-					break;
+				while (int((c = int(data.charCodeAt(++a))) > 0x2F) & int(c < 0x3A)) {
+					r = (r * 10) + (c - 0x30);
+				}
+				if (int(i == 0x20) | int(i == 0x09) | int(c == 0x2C) | int((c | 0x20) == 0x7D)) {
+					i = a - 1;
+					return (1 - n) * r;
 				}
 			}
 			if (c == 0x2E) {
-				while (a != e) {
-					c = data.charCodeAt(++a);
-					if (isNumeric(c)) {
-						r += (c - 0x30) / (t *= 10);
-						continue;
-					} else if (int(isSpace(c)) | int(c == 0x2C) | int(c == 0x5D) | int(c == 0x7D)) {
-						i = a - 1;
-						return n ? r * -1.0 : r;
-					}
-					break;
+				while (int((c = int(data.charCodeAt(++a))) > 0x2F) & int(c < 0x3A)) {
+					r += (c - 0x30) / (t *= 10);
+				}
+				if (int(i == 0x20) | int(i == 0x09) | int(c == 0x2C) | int((c | 0x20) == 0x7D)) {
+					i = a - 1;
+					return (1 - n) * r;
 				}
 			}
-			error(data, a, "Expected 0-9 or .");
-			return NaN;
+			if ((c | 0x20) == 0x65) {
+				c = data.charCodeAt(++a);
+				if (c == 0x2D) {
+					exn = 1;
+					c = data.charCodeAt(++a);
+				} else if (c == 0x2B) c = data.charCodeAt(++a);
+				t = 3;
+				while (int(c > 0x2F) & int(c < 0x3A) & int(Boolean(t--))) {
+					ex = (ex * 10) + (c - 0x30);
+					c = data.charCodeAt(++a);
+				}
+				while (int(c > 0x2F) & int(c < 0x3A)) c = data.charCodeAt(++a); // consume the remainder
+				t = 10;
+				if (exn) {
+					if (ex < 325) while (ex) {
+						r /= ((ex & 1) * t + (~ex & 1));
+						ex >>>= 1;
+						t *= t;
+						r /= ((ex & 1) * t + (~ex & 1));
+						ex >>>= 1;
+						t *= t;
+					} else r = 0; // >= 325 for negative exponents results in 0
+				} else {
+					if (ex < 309)while (ex) {
+						r *= ((ex & 1) * t + (~ex & 1));
+						ex >>>= 1;
+						t *= t;
+						r *= ((ex & 1) * t + (~ex & 1));
+						ex >>>= 1;
+						t *= t;
+					} else r = Infinity; // >= 309 for positive exponents results in Infinity
+				}
+				if (int(i == 0x20) | int(i == 0x09) | int(c == 0x2C) | int((c | 0x20) == 0x7D)) {
+					i = a - 1;
+					return (1 - n) * r;
+				}
+			}
+			if (a > e) {
+				i = e;
+				return (1 - n) * r;
+			}
+			error(data, a);
+			return NaN; // not reached
 		}
-		private static function handleLit(data:String, e:int):* {
+		private function handleLit(data:String, e:int):* {
 			var a:int = data.charCodeAt(i++) | 0x20, b:int = data.charCodeAt(i++) | 0x20;
 			var c:int = data.charCodeAt(i++) | 0x20, d:int = data.charCodeAt(i) | 0x20;
-			if (a == 0x6E) {
-				if (b == 0x75) {
-					if (c == 0x6C) {
-						if (d == 0x6C) {
-							return null;
-						}
-						error(data, i-1, "Expected 'l' after nul.");
-					}
-					error(data, i-2, "Expected 'l' after nu.");
-				}
-				error(data, i-3, "Expected 'u' after n.");
-			} else if (a == 0x74) {
-				if (b == 0x72) {
-					if (c == 0x75) {
-						if (d == 0x65) {
-							return true
-						}
-						error(data, i-1, "Expected 'e' after tur.");
-					}
-					error(data, i-2, "Expected 'r' after tu.");
-				}
-				error(data, i-3, "Expected 'u' after t.");
+			if (a == 0x74) {
+				if (int(b == 0x72) | int(c == 0x75) | int(d == 0x65)) return true
+				error(data, i - 3, "Expected 'true'", 3);
 			} else if (a == 0x66) {
-				if (b == 0x61) {
-					if (c == 0x6C) {
-						if (d == 0x73) {
-							if ((data.charCodeAt(++i) | 0x20) == 0x65) {
-								return false;
-							}
-							error(data, i-1, "Expected 'e' after fals.");
-						}
-						error(data, i-1, "Expected 's' after fal.");
-					}
-					error(data, i-2, "Expected 'l' after fa.");
-				}
-				error(data, i-3, "Expected 'a' after f.");
+				if (int(b == 0x61) | int(c == 0x6C) | int(d == 0x73) | int((data.charCodeAt(++i) | 0x20) == 0x65)) return false;
+				error(data, i - 4, "Expected 'false'", 4);
+			} else if (a == 0x6E) {
+				if (int(b == 0x75) | int(c == 0x6C) | int(d == 0x6C)) return null;
+				error(data, i - 3, "Expected 'null'", 3);
 			}
 		}
-		private static function handleArray(data:String, e:int):Array {
-			var rtn:Array = preArrs.pop(), c:int, inx:int, p:Boolean = true;
-			while (i != e) {
-				c = data.charCodeAt(++i);
-				if (isSpace(c)) {
-					continue;
-				} else if (c == 0x5D) {
-					break;
+		private function handleArray(data:String, e:int):Array {
+			var c:int, rtn:Array = preArrs.pop(), inx:int, p:Boolean = true;
+			while (i < e) {
+				do { c = data.charCodeAt(++i); } while (isSpace(c));
+				if (c == 0x5D) {
+					// throw error on ",]" ?
+					rtn.length = inx;
+					return rtn;
 				} else if (p) {
 					p = false;
-					if (isObject(c)) {
-						rtn[inx++] = handleObject(data, e);
-						continue;
-					} else if (isArray(c)) {
-						rtn[inx++] = handleArray(data, e);
-						continue;
-					} else if (isString(c)) {
-						rtn[inx++] = handleString(data, e);
-						continue;
+					if (isString(c)) {
+						rtn[inx] = handleString(data, e);++inx;
 					} else if (isNumber(c)) {
-						rtn[inx++] = handleNumber(data, e);
-						continue;
+						rtn[inx] = handleNumber(data, e);++inx;
+					} else if (isObject(c)) {
+						rtn[inx] = handleObject(data, e);++inx;
+					} else if (isArray(c)) {
+						rtn[inx] = handleArray(data, e);++inx;
 					} else if (isLit(c)) {
-						rtn[inx++] = handleLit(data, e);
-						continue;
-					}
-					error(data, i);
-				} else if (c == 0x2C) {
-					p = true;
-					continue;
-				}
-				error(data, i, "Expected , or ]");
+						rtn[inx] = handleLit(data, e);++inx;
+					} else error(data, i);
+				} else if ((p = (c == 0x2C))) void;
+				else error(data, i, "Expected , or ]");
 			}
-			rtn.length = inx;
-			return rtn;
+			error(data, i, "Unterminated Array.", 1);
+			return null; // not reached
 		}
-		private static function handleObject(data:String, e:int):Object {
-			var rtn:Object = preObjs.pop(), c:int, inx:String, p:Boolean = true;
-			while (i != e) {
-				c = data.charCodeAt(++i);
-				if (isSpace(c)) {
-					continue;
-				} else if (c == 0x7D) {
-					break;
+		private function handleObject(data:String, e:int):Object {
+			var c:int, rtn:Object = preObjs.pop(), inx:String, p:Boolean = true;
+			while (i < e) {
+				do { c = data.charCodeAt(++i); } while (isSpace(c));
+				if (c == 0x7D) {
+					// error on ,} ?
+					return rtn;
 				} else if (p) {
 					p = false;
 					if (isString(c)) {
 						inx = handleString(data, e);
-					} else {
-						// handle number?
-						error(data, i, "Expected \" or '");
-					}
-					c = data.charCodeAt(++i);
-					if (isSpace(c)) {
-						do {
-							c = data.charCodeAt(++i);
-						} while (isSpace(c) && i != e);
-					}
-					if (c == 0x3A) {
-						c = data.charCodeAt(++i);
-						if (isSpace(c)) {
-							do {
-								c = data.charCodeAt(++i);
-							} while (isSpace(c) && i != e);
-						}
-						if (isString(c)) {
-							rtn[inx] = handleString(data, e);
-							continue;
-						} else if (isNumber(c)) {
-							rtn[inx] = handleNumber(data, e);
-							continue;
-						} else if (isArray(c)) {
-							rtn[inx] = handleArray(data, e);
-							continue;
-						} else  if (isLit(c)) {
-							rtn[inx] = handleLit(data, e);
-							continue;
-						} else if (isObject(c)) {
-							rtn[inx] = handleObject(data, e);
-							continue;
-						}
-						error(data, i);
-					}
-					error(data, i, "Expected :");
-				} else if (c == 0x2C) {
-					p = true;
-					continue;
-				}
-				error(data, i, "Expected , or }");
+						do { c = data.charCodeAt(++i); } while (isSpace(c));
+						if (c == 0x3A) {
+							do { c = data.charCodeAt(++i); } while (isSpace(c)); // wish i could omit these
+							if (isString(c)) {
+								rtn[inx] = handleString(data, e);
+							} else if (isNumber(c)) {
+								rtn[inx] = handleNumber(data, e);
+							} else if (isArray(c)) {
+								rtn[inx] = handleArray(data, e);
+							} else if (isObject(c)) {
+								rtn[inx] = handleObject(data, e);
+							} else if (isLit(c)) {
+								rtn[inx] = handleLit(data, e);
+							} else error(data, i, "Expected value.", 1); // values arranged in an attempt to get best performance
+						} else error(data, i, "Expected :");
+					} else error(data, i, "Expected \" or '"); // rearranging this saves one jump for every object property.
+				} else if ((p = (c == 0x2C))) void;
+				else error(data, i, "Expected , or }");
 			}
-			return rtn;
+			error(data, i, "Unterminated Object.", 1);
+			return null; // not reached
 		}
-		private static function error(data:String, i:int, e:String = null):void {
-			throw new Error("Malformed JSON at char: " + i + ", " + data.charAt(i) + (e ? ". " + e : '.'), errorID);
+		private function error(data:String, i:int, e:String = null, l:int = 0):void {
+			if (l) {
+				if (l > 1) {
+					throw new Error("Malformed JSON at: " + i + ", '" + data.substr(i, l) + (e ? "'. " + e : "'."), errorID);
+				} else {
+					throw new Error("Malformed JSON at: " + i + ", " + data.charAt(i) + (e ? ". " + e : '.'), errorID);
+				}
+			} else {
+				throw new Error("Malformed JSON at char: " + i + ", " + data.charAt(i) + (e ? ". " + e : '.'), errorID);
+			}
 		}
 	}
 }
