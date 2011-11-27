@@ -123,9 +123,9 @@ package skyboy.math { /*nl.ronvalstar.math*/
 				y = $y * fFreq;
 				z = $z * fFreq;
 
-				xf = x - (x % 1);//Math.floor(x);
-				yf = y - (y % 1);//Math.floor(y);
-			 	zf = z - (z % 1);//Math.floor(z);
+				xf = x - (x % 1 + Number(x < 0));//Math.floor(x);
+				yf = y - (y % 1 + Number(y < 0));//Math.floor(y);
+			 	zf = z - (z % 1 + Number(z < 0));//Math.floor(z);
 
 				X = xf & 255;
 			 	Y = yf & 255;
@@ -254,9 +254,9 @@ package skyboy.math { /*nl.ronvalstar.math*/
 						y = $y * fFreq;
 						z = $z * fFreq;
 
-						xf = x - (x % 1);//Math.floor(x);
-						yf = y - (y % 1);//Math.floor(y);
-					 	zf = z - (z % 1);//Math.floor(z);
+						xf = x - (x % 1 + Number(x < 0));//Math.floor(x);
+						yf = y - (y % 1 + Number(y < 0));//Math.floor(y);
+					 	zf = z - (z % 1 + Number(z < 0));//Math.floor(z);
 
 						X = xf & 255;
 					 	Y = yf & 255;
@@ -387,9 +387,9 @@ package skyboy.math { /*nl.ronvalstar.math*/
 						y = $y * fFreq;
 						z = $z * fFreq;
 
-						xf = x - (x % 1);//Math.floor(x);
-						yf = y - (y % 1);//Math.floor(y);
-					 	zf = z - (z % 1);//Math.floor(z);
+						xf = x - (x % 1 + Number(x < 0));//Math.floor(x);
+						yf = y - (y % 1 + Number(y < 0));//Math.floor(y);
+					 	zf = z - (z % 1 + Number(z < 0));//Math.floor(z);
 
 						X = xf & 255;
 					 	Y = yf & 255;
@@ -552,9 +552,9 @@ package skyboy.math { /*nl.ronvalstar.math*/
 							y = $y * fFreq;
 							z = $z * fFreq;
 
-							xf = x - (x % 1);//Math.floor(x);
-							yf = y - (y % 1);//Math.floor(y);
-							zf = z - (z % 1);//Math.floor(z);
+							xf = x - (x % 1 + Number(x < 0));//Math.floor(x);
+							yf = y - (y % 1 + Number(y < 0));//Math.floor(y);
+							zf = z - (z % 1 + Number(z < 0));//Math.floor(z);
 
 							X = xf & 255;
 							Y = yf & 255;
@@ -651,9 +651,9 @@ package skyboy.math { /*nl.ronvalstar.math*/
 							y = $y2 * fFreq;
 							z = $z2 * fFreq;
 
-							xf = x - (x % 1);//Math.floor(x);
-							yf = y - (y % 1);//Math.floor(y);
-							zf = z - (z % 1);//Math.floor(z);
+							xf = x - (x % 1 + Number(x < 0));//Math.floor(x);
+							yf = y - (y % 1 + Number(y < 0));//Math.floor(y);
+							zf = z - (z % 1 + Number(z < 0));//Math.floor(z);
 
 							X = xf & 255;
 							Y = yf & 255;
@@ -750,9 +750,9 @@ package skyboy.math { /*nl.ronvalstar.math*/
 							y = $y3 * fFreq;
 							z = $z3 * fFreq;
 
-							xf = x - (x % 1);//Math.floor(x);
-							yf = y - (y % 1);//Math.floor(y);
-							zf = z - (z % 1);//Math.floor(z);
+							xf = x - (x % 1 + Number(x < 0));//Math.floor(x);
+							yf = y - (y % 1 + Number(y < 0));//Math.floor(y);
+							zf = z - (z % 1 + Number(z < 0));//Math.floor(z);
 
 							X = xf & 255;
 							Y = yf & 255;
@@ -849,9 +849,9 @@ package skyboy.math { /*nl.ronvalstar.math*/
 							y = $y4 * fFreq;
 							z = $z4 * fFreq;
 
-							xf = x - (x % 1);//Math.floor(x);
-							yf = y - (y % 1);//Math.floor(y);
-							zf = z - (z % 1);//Math.floor(z);
+							xf = x - (x % 1 + Number(x < 0));//Math.floor(x);
+							yf = y - (y % 1 + Number(y < 0));//Math.floor(y);
+							zf = z - (z % 1 + Number(z < 0));//Math.floor(z);
 
 							X = xf & 255;
 							Y = yf & 255;
@@ -1025,9 +1025,9 @@ package skyboy.math { /*nl.ronvalstar.math*/
 							y = $y * fFreq;
 							z = $z * fFreq;
 
-							xf = x - (x % 1);//Math.floor(x);
-							yf = y - (y % 1);//Math.floor(y);
-							zf = z - (z % 1);//Math.floor(z);
+							xf = x - (x % 1 + Number(x < 0));//Math.floor(x);
+							yf = y - (y % 1 + Number(y < 0));//Math.floor(y);
+							zf = z - (z % 1 + Number(z < 0));//Math.floor(z);
 
 							X = xf & 255;
 							Y = yf & 255;
@@ -1124,9 +1124,9 @@ package skyboy.math { /*nl.ronvalstar.math*/
 							y = $y2 * fFreq;
 							z = $z2 * fFreq;
 
-							xf = x - (x % 1);//Math.floor(x);
-							yf = y - (y % 1);//Math.floor(y);
-							zf = z - (z % 1);//Math.floor(z);
+							xf = x - (x % 1 + Number(x < 0));//Math.floor(x);
+							yf = y - (y % 1 + Number(y < 0));//Math.floor(y);
+							zf = z - (z % 1 + Number(z < 0));//Math.floor(z);
 
 							X = xf & 255;
 							Y = yf & 255;
@@ -1223,9 +1223,9 @@ package skyboy.math { /*nl.ronvalstar.math*/
 							y = $y3 * fFreq;
 							z = $z3 * fFreq;
 
-							xf = x - (x % 1);//Math.floor(x);
-							yf = y - (y % 1);//Math.floor(y);
-							zf = z - (z % 1);//Math.floor(z);
+							xf = x - (x % 1 + Number(x < 0));//Math.floor(x);
+							yf = y - (y % 1 + Number(y < 0));//Math.floor(y);
+							zf = z - (z % 1 + Number(z < 0));//Math.floor(z);
 
 							X = xf & 255;
 							Y = yf & 255;
@@ -1322,9 +1322,9 @@ package skyboy.math { /*nl.ronvalstar.math*/
 							y = $y4 * fFreq;
 							z = $z4 * fFreq;
 
-							xf = x - (x % 1);//Math.floor(x);
-							yf = y - (y % 1);//Math.floor(y);
-							zf = z - (z % 1);//Math.floor(z);
+							xf = x - (x % 1 + Number(x < 0));//Math.floor(x);
+							yf = y - (y % 1 + Number(y < 0));//Math.floor(y);
+							zf = z - (z % 1 + Number(z < 0));//Math.floor(z);
 
 							X = xf & 255;
 							Y = yf & 255;
