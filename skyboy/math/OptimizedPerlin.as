@@ -155,56 +155,56 @@ package skyboy.math { /*nl.ronvalstar.math*/
 				g1 = ((-(hash & 1) | 1)* (t * x1 + (1 - t) * y1));
 				t = int(hash == (12 | (hash & 2)));
 				t2 = int(hash < 4);
-				g1 += ((int(!(hash & 2)) << 1) - 1) * (t2 * y1 + (1 - t2) * (t * x1 + (1 - t) * z1 ));
+				g1 += ((~hash & 2) - 1) * (t2 * y1 + (1 - t2) * (t * x1 + (1 - t) * z1 ));
 
 				hash = p[AB + 1] & 15;
 				t = int(hash < 8);
 				g2 = ((-(hash & 1) | 1)* (t * x + (1 - t) * y1));
 				t = int(hash == (12 | (hash & 2)));
 				t2 = int(hash < 4);
-				g2 += ((int(!(hash & 2)) << 1) - 1) * (t2 * y1 + (1 - t2) * (t * x + (1 - t) * z1 ));
+				g2 += ((~hash & 2) - 1) * (t2 * y1 + (1 - t2) * (t * x + (1 - t) * z1 ));
 
 				hash = p[BA + 1] & 15;
 				t = int(hash < 8);
 				g3 = ((-(hash & 1) | 1)* (t * x1 + (1 - t) * y));
 				t = int(hash == (12 | (hash & 2)));
 				t2 = int(hash < 4);
-				g3 += ((int(!(hash & 2)) << 1) - 1) * (t2 * y + (1 - t2) * (t * x1 + (1 - t) * z1 ));
+				g3 += ((~hash & 2) - 1) * (t2 * y + (1 - t2) * (t * x1 + (1 - t) * z1 ));
 
 				hash = p[AA + 1] & 15;
 				t = int(hash < 8);
 				g4 = ((-(hash & 1) | 1)* (t * x + (1 - t) * y));
 				t = int(hash == (12 | (hash & 2)));
 				t2 = int(hash < 4);
-				g4 += ((int(!(hash & 2)) << 1) - 1) * (t2 * y + (1 - t2) * (t * x + (1 - t) * z1 ));
+				g4 += ((~hash & 2) - 1) * (t2 * y + (1 - t2) * (t * x + (1 - t) * z1 ));
 
 				hash = p[BB] & 15;
 				t = int(hash < 8);
 				g5 = ((-(hash & 1) | 1)* (t * x1 + (1 - t) * y1));
 				t = int(hash == (12 | (hash & 2)));
 				t2 = int(hash < 4);
-				g5 += ((int(!(hash & 2)) << 1) - 1) * (t2 * y1 + (1 - t2) * (t * x1 + (1 - t) * z ));
+				g5 += ((~hash & 2) - 1) * (t2 * y1 + (1 - t2) * (t * x1 + (1 - t) * z ));
 
 				hash = p[AB] & 15;
 				t = int(hash < 8);
 				g6 = ((-(hash & 1) | 1)* (t * x + (1 - t) * y1));
 				t = int(hash == (12 | (hash & 2)));
 				t2 = int(hash < 4);
-				g6 += ((int(!(hash & 2)) << 1) - 1) * (t2 * y1 + (1 - t2) * (t * x + (1 - t) * z ));
+				g6 += ((~hash & 2) - 1) * (t2 * y1 + (1 - t2) * (t * x + (1 - t) * z ));
 
 				hash = p[BA] & 15;
 				t = int(hash < 8);
 				g7 = ((-(hash & 1) | 1)* (t * x1 + (1 - t) * y));
 				t = int(hash == (12 | (hash & 2)));
 				t2 = int(hash < 4);
-				g7 += ((int(!(hash & 2)) << 1) - 1) * (t2 * y + (1 - t2) * (t * x1 + (1 - t) * z ));
+				g7 += ((~hash & 2) - 1) * (t2 * y + (1 - t2) * (t * x1 + (1 - t) * z ));
 
 				hash = p[AA] & 15;
 				t = int(hash < 8);
 				g8 = ((-(hash & 1) | 1)* (t * x + (1 - t) * y));
 				t = int(hash == (12 | (hash & 2)));
 				t2 = int(hash < 4);
-				g8 += ((int(!(hash & 2)) << 1) - 1) * (t2 * y + (1 - t2) * (t * x + (1 - t) * z ));
+				g8 += ((~hash & 2) - 1) * (t2 * y + (1 - t2) * (t * x + (1 - t) * z ));
 
 				g2 += u * (g1 - g2);
 				g4 += u * (g3 - g4);
@@ -286,56 +286,56 @@ package skyboy.math { /*nl.ronvalstar.math*/
 						g1 = (( -(hash & 1) | 1) * (t * x1 + (1 - t) * y1));
 						t = int(hash == (12 | (hash & 2)));
 						t2 = int(hash < 4);
-						g1 += ((int(!(hash & 2)) << 1) - 1) * (t2 * y1 + (1 - t2) * (t * x1 + (1 - t) * z1 ));
+						g1 += ((~hash & 2) - 1) * (t2 * y1 + (1 - t2) * (t * x1 + (1 - t) * z1 ));
 
 						hash = p[AB + 1] & 15;
 						t = int(hash < 8);
 						g2 = (( -(hash & 1) | 1) * (t * x + (1 - t) * y1));
 						t = int(hash == (12 | (hash & 2)));
 						t2 = int(hash < 4);
-						g2 += ((int(!(hash & 2)) << 1) - 1) * (t2 * y1 + (1 - t2) * (t * x + (1 - t) * z1 ));
+						g2 += ((~hash & 2) - 1) * (t2 * y1 + (1 - t2) * (t * x + (1 - t) * z1 ));
 
 						hash = p[BA + 1] & 15;
 						t = int(hash < 8);
 						g3 = (( -(hash & 1) | 1) * (t * x1 + (1 - t) * y));
 						t = int(hash == (12 | (hash & 2)));
 						t2 = int(hash < 4);
-						g3 += ((int(!(hash & 2)) << 1) - 1) * (t2 * y + (1 - t2) * (t * x1 + (1 - t) * z1 ));
+						g3 += ((~hash & 2) - 1) * (t2 * y + (1 - t2) * (t * x1 + (1 - t) * z1 ));
 
 						hash = p[AA + 1] & 15;
 						t = int(hash < 8);
 						g4 = ((-(hash & 1) | 1)* (t * x + (1 - t) * y));
 						t = int(hash == (12 | (hash & 2)));
 						t2 = int(hash < 4);
-						g4 += ((int(!(hash & 2)) << 1) - 1) * (t2 * y + (1 - t2) * (t * x + (1 - t) * z1 ));
+						g4 += ((~hash & 2) - 1) * (t2 * y + (1 - t2) * (t * x + (1 - t) * z1 ));
 
 						hash = p[BB] & 15;
 						t = int(hash < 8);
 						g5 = (( -(hash & 1) | 1) * (t * x1 + (1 - t) * y1));
 						t = int(hash == (12 | (hash & 2)));
 						t2 = int(hash < 4);
-						g5 += ((int(!(hash & 2)) << 1) - 1) * (t2 * y1 + (1 - t2) * (t * x1 + (1 - t) * z ));
+						g5 += ((~hash & 2) - 1) * (t2 * y1 + (1 - t2) * (t * x1 + (1 - t) * z ));
 
 						hash = p[AB] & 15;
 						t = int(hash < 8);
 						g6 = (( -(hash & 1) | 1) * (t * x + (1 - t) * y1));
 						t = int(hash == (12 | (hash & 2)));
 						t2 = int(hash < 4);
-						g6 += ((int(!(hash & 2)) << 1) - 1) * (t2 * y1 + (1 - t2) * (t * x + (1 - t) * z ));
+						g6 += ((~hash & 2) - 1) * (t2 * y1 + (1 - t2) * (t * x + (1 - t) * z ));
 
 						hash = p[BA] & 15;
 						t = int(hash < 8);
 						g7 = (( -(hash & 1) | 1) * (t * x1 + (1 - t) * y));
 						t = int(hash == (12 | (hash & 2)));
 						t2 = int(hash < 4);
-						g7 += ((int(!(hash & 2)) << 1) - 1) * (t2 * y + (1 - t2) * (t * x1 + (1 - t) * z ));
+						g7 += ((~hash & 2) - 1) * (t2 * y + (1 - t2) * (t * x1 + (1 - t) * z ));
 
 						hash = p[AA] & 15;
 						t = int(hash < 8);
 						g8 = (( -(hash & 1) | 1) * (t * x + (1 - t) * y));
 						t = int(hash == (12 | (hash & 2)));
 						t2 = int(hash < 4);
-						g8 += ((int(!(hash & 2)) << 1) - 1) * (t2 * y + (1 - t2) * (t * x + (1 - t) * z ));
+						g8 += ((~hash & 2) - 1) * (t2 * y + (1 - t2) * (t * x + (1 - t) * z ));
 
 						g2 += u * (g1 - g2);
 						g4 += u * (g3 - g4);
@@ -419,56 +419,56 @@ package skyboy.math { /*nl.ronvalstar.math*/
 						g1 = (( -(hash & 1) | 1) * (t * x1 + (1 - t) * y1));
 						t = int(hash == (12 | (hash & 2)));
 						t2 = int(hash < 4);
-						g1 += ((int(!(hash & 2)) << 1) - 1) * (t2 * y1 + (1 - t2) * (t * x1 + (1 - t) * z1 ));
+						g1 += ((~hash & 2) - 1) * (t2 * y1 + (1 - t2) * (t * x1 + (1 - t) * z1 ));
 
 						hash = p[AB + 1] & 15;
 						t = int(hash < 8);
 						g2 = (( -(hash & 1) | 1) * (t * x + (1 - t) * y1));
 						t = int(hash == (12 | (hash & 2)));
 						t2 = int(hash < 4);
-						g2 += ((int(!(hash & 2)) << 1) - 1) * (t2 * y1 + (1 - t2) * (t * x + (1 - t) * z1 ));
+						g2 += ((~hash & 2) - 1) * (t2 * y1 + (1 - t2) * (t * x + (1 - t) * z1 ));
 
 						hash = p[BA + 1] & 15;
 						t = int(hash < 8);
 						g3 = (( -(hash & 1) | 1) * (t * x1 + (1 - t) * y));
 						t = int(hash == (12 | (hash & 2)));
 						t2 = int(hash < 4);
-						g3 += ((int(!(hash & 2)) << 1) - 1) * (t2 * y + (1 - t2) * (t * x1 + (1 - t) * z1 ));
+						g3 += ((~hash & 2) - 1) * (t2 * y + (1 - t2) * (t * x1 + (1 - t) * z1 ));
 
 						hash = p[AA + 1] & 15;
 						t = int(hash < 8);
 						g4 = ((-(hash & 1) | 1)* (t * x + (1 - t) * y));
 						t = int(hash == (12 | (hash & 2)));
 						t2 = int(hash < 4);
-						g4 += ((int(!(hash & 2)) << 1) - 1) * (t2 * y + (1 - t2) * (t * x + (1 - t) * z1 ));
+						g4 += ((~hash & 2) - 1) * (t2 * y + (1 - t2) * (t * x + (1 - t) * z1 ));
 
 						hash = p[BB] & 15;
 						t = int(hash < 8);
 						g5 = (( -(hash & 1) | 1) * (t * x1 + (1 - t) * y1));
 						t = int(hash == (12 | (hash & 2)));
 						t2 = int(hash < 4);
-						g5 += ((int(!(hash & 2)) << 1) - 1) * (t2 * y1 + (1 - t2) * (t * x1 + (1 - t) * z ));
+						g5 += ((~hash & 2) - 1) * (t2 * y1 + (1 - t2) * (t * x1 + (1 - t) * z ));
 
 						hash = p[AB] & 15;
 						t = int(hash < 8);
 						g6 = (( -(hash & 1) | 1) * (t * x + (1 - t) * y1));
 						t = int(hash == (12 | (hash & 2)));
 						t2 = int(hash < 4);
-						g6 += ((int(!(hash & 2)) << 1) - 1) * (t2 * y1 + (1 - t2) * (t * x + (1 - t) * z ));
+						g6 += ((~hash & 2) - 1) * (t2 * y1 + (1 - t2) * (t * x + (1 - t) * z ));
 
 						hash = p[BA] & 15;
 						t = int(hash < 8);
 						g7 = (( -(hash & 1) | 1) * (t * x1 + (1 - t) * y));
 						t = int(hash == (12 | (hash & 2)));
 						t2 = int(hash < 4);
-						g7 += ((int(!(hash & 2)) << 1) - 1) * (t2 * y + (1 - t2) * (t * x1 + (1 - t) * z ));
+						g7 += ((~hash & 2) - 1) * (t2 * y + (1 - t2) * (t * x1 + (1 - t) * z ));
 
 						hash = p[AA] & 15;
 						t = int(hash < 8);
 						g8 = (( -(hash & 1) | 1) * (t * x + (1 - t) * y));
 						t = int(hash == (12 | (hash & 2)));
 						t2 = int(hash < 4);
-						g8 += ((int(!(hash & 2)) << 1) - 1) * (t2 * y + (1 - t2) * (t * x + (1 - t) * z ));
+						g8 += ((~hash & 2) - 1) * (t2 * y + (1 - t2) * (t * x + (1 - t) * z ));
 
 						g2 += u * (g1 - g2);
 						g4 += u * (g3 - g4);
@@ -584,56 +584,56 @@ package skyboy.math { /*nl.ronvalstar.math*/
 							g1 = (( -(hash & 1) | 1) * (t * x1 + (1 - t) * y1));
 							t = int(hash == (12 | (hash & 2)));
 							t2 = int(hash < 4);
-							g1 += ((int(!(hash & 2)) << 1) - 1) * (t2 * y1 + (1 - t2) * (t * x1 + (1 - t) * z1 ));
+							g1 += ((~hash & 2) - 1) * (t2 * y1 + (1 - t2) * (t * x1 + (1 - t) * z1 ));
 
 							hash = p[AB + 1] & 15;
 							t = int(hash < 8);
 							g2 = (( -(hash & 1) | 1) * (t * x + (1 - t) * y1));
 							t = int(hash == (12 | (hash & 2)));
 							t2 = int(hash < 4);
-							g2 += ((int(!(hash & 2)) << 1) - 1) * (t2 * y1 + (1 - t2) * (t * x + (1 - t) * z1 ));
+							g2 += ((~hash & 2) - 1) * (t2 * y1 + (1 - t2) * (t * x + (1 - t) * z1 ));
 
 							hash = p[BA + 1] & 15;
 							t = int(hash < 8);
 							g3 = (( -(hash & 1) | 1) * (t * x1 + (1 - t) * y));
 							t = int(hash == (12 | (hash & 2)));
 							t2 = int(hash < 4);
-							g3 += ((int(!(hash & 2)) << 1) - 1) * (t2 * y + (1 - t2) * (t * x1 + (1 - t) * z1 ));
+							g3 += ((~hash & 2) - 1) * (t2 * y + (1 - t2) * (t * x1 + (1 - t) * z1 ));
 
 							hash = p[AA + 1] & 15;
 							t = int(hash < 8);
 							g4 = ((-(hash & 1) | 1)* (t * x + (1 - t) * y));
 							t = int(hash == (12 | (hash & 2)));
 							t2 = int(hash < 4);
-							g4 += ((int(!(hash & 2)) << 1) - 1) * (t2 * y + (1 - t2) * (t * x + (1 - t) * z1 ));
+							g4 += ((~hash & 2) - 1) * (t2 * y + (1 - t2) * (t * x + (1 - t) * z1 ));
 
 							hash = p[BB] & 15;
 							t = int(hash < 8);
 							g5 = (( -(hash & 1) | 1) * (t * x1 + (1 - t) * y1));
 							t = int(hash == (12 | (hash & 2)));
 							t2 = int(hash < 4);
-							g5 += ((int(!(hash & 2)) << 1) - 1) * (t2 * y1 + (1 - t2) * (t * x1 + (1 - t) * z ));
+							g5 += ((~hash & 2) - 1) * (t2 * y1 + (1 - t2) * (t * x1 + (1 - t) * z ));
 
 							hash = p[AB] & 15;
 							t = int(hash < 8);
 							g6 = (( -(hash & 1) | 1) * (t * x + (1 - t) * y1));
 							t = int(hash == (12 | (hash & 2)));
 							t2 = int(hash < 4);
-							g6 += ((int(!(hash & 2)) << 1) - 1) * (t2 * y1 + (1 - t2) * (t * x + (1 - t) * z ));
+							g6 += ((~hash & 2) - 1) * (t2 * y1 + (1 - t2) * (t * x + (1 - t) * z ));
 
 							hash = p[BA] & 15;
 							t = int(hash < 8);
 							g7 = (( -(hash & 1) | 1) * (t * x1 + (1 - t) * y));
 							t = int(hash == (12 | (hash & 2)));
 							t2 = int(hash < 4);
-							g7 += ((int(!(hash & 2)) << 1) - 1) * (t2 * y + (1 - t2) * (t * x1 + (1 - t) * z ));
+							g7 += ((~hash & 2) - 1) * (t2 * y + (1 - t2) * (t * x1 + (1 - t) * z ));
 
 							hash = p[AA] & 15;
 							t = int(hash < 8);
 							g8 = (( -(hash & 1) | 1) * (t * x + (1 - t) * y));
 							t = int(hash == (12 | (hash & 2)));
 							t2 = int(hash < 4);
-							g8 += ((int(!(hash & 2)) << 1) - 1) * (t2 * y + (1 - t2) * (t * x + (1 - t) * z ));
+							g8 += ((~hash & 2) - 1) * (t2 * y + (1 - t2) * (t * x + (1 - t) * z ));
 
 							g2 += u * (g1 - g2);
 							g4 += u * (g3 - g4);
@@ -683,56 +683,56 @@ package skyboy.math { /*nl.ronvalstar.math*/
 							g1 = (( -(hash & 1) | 1) * (t * x1 + (1 - t) * y1));
 							t = int(hash == (12 | (hash & 2)));
 							t2 = int(hash < 4);
-							g1 += ((int(!(hash & 2)) << 1) - 1) * (t2 * y1 + (1 - t2) * (t * x1 + (1 - t) * z1 ));
+							g1 += ((~hash & 2) - 1) * (t2 * y1 + (1 - t2) * (t * x1 + (1 - t) * z1 ));
 
 							hash = p[AB + 1] & 15;
 							t = int(hash < 8);
 							g2 = (( -(hash & 1) | 1) * (t * x + (1 - t) * y1));
 							t = int(hash == (12 | (hash & 2)));
 							t2 = int(hash < 4);
-							g2 += ((int(!(hash & 2)) << 1) - 1) * (t2 * y1 + (1 - t2) * (t * x + (1 - t) * z1 ));
+							g2 += ((~hash & 2) - 1) * (t2 * y1 + (1 - t2) * (t * x + (1 - t) * z1 ));
 
 							hash = p[BA + 1] & 15;
 							t = int(hash < 8);
 							g3 = (( -(hash & 1) | 1) * (t * x1 + (1 - t) * y));
 							t = int(hash == (12 | (hash & 2)));
 							t2 = int(hash < 4);
-							g3 += ((int(!(hash & 2)) << 1) - 1) * (t2 * y + (1 - t2) * (t * x1 + (1 - t) * z1 ));
+							g3 += ((~hash & 2) - 1) * (t2 * y + (1 - t2) * (t * x1 + (1 - t) * z1 ));
 
 							hash = p[AA + 1] & 15;
 							t = int(hash < 8);
 							g4 = ((-(hash & 1) | 1)* (t * x + (1 - t) * y));
 							t = int(hash == (12 | (hash & 2)));
 							t2 = int(hash < 4);
-							g4 += ((int(!(hash & 2)) << 1) - 1) * (t2 * y + (1 - t2) * (t * x + (1 - t) * z1 ));
+							g4 += ((~hash & 2) - 1) * (t2 * y + (1 - t2) * (t * x + (1 - t) * z1 ));
 
 							hash = p[BB] & 15;
 							t = int(hash < 8);
 							g5 = (( -(hash & 1) | 1) * (t * x1 + (1 - t) * y1));
 							t = int(hash == (12 | (hash & 2)));
 							t2 = int(hash < 4);
-							g5 += ((int(!(hash & 2)) << 1) - 1) * (t2 * y1 + (1 - t2) * (t * x1 + (1 - t) * z ));
+							g5 += ((~hash & 2) - 1) * (t2 * y1 + (1 - t2) * (t * x1 + (1 - t) * z ));
 
 							hash = p[AB] & 15;
 							t = int(hash < 8);
 							g6 = (( -(hash & 1) | 1) * (t * x + (1 - t) * y1));
 							t = int(hash == (12 | (hash & 2)));
 							t2 = int(hash < 4);
-							g6 += ((int(!(hash & 2)) << 1) - 1) * (t2 * y1 + (1 - t2) * (t * x + (1 - t) * z ));
+							g6 += ((~hash & 2) - 1) * (t2 * y1 + (1 - t2) * (t * x + (1 - t) * z ));
 
 							hash = p[BA] & 15;
 							t = int(hash < 8);
 							g7 = (( -(hash & 1) | 1) * (t * x1 + (1 - t) * y));
 							t = int(hash == (12 | (hash & 2)));
 							t2 = int(hash < 4);
-							g7 += ((int(!(hash & 2)) << 1) - 1) * (t2 * y + (1 - t2) * (t * x1 + (1 - t) * z ));
+							g7 += ((~hash & 2) - 1) * (t2 * y + (1 - t2) * (t * x1 + (1 - t) * z ));
 
 							hash = p[AA] & 15;
 							t = int(hash < 8);
 							g8 = (( -(hash & 1) | 1) * (t * x + (1 - t) * y));
 							t = int(hash == (12 | (hash & 2)));
 							t2 = int(hash < 4);
-							g8 += ((int(!(hash & 2)) << 1) - 1) * (t2 * y + (1 - t2) * (t * x + (1 - t) * z ));
+							g8 += ((~hash & 2) - 1) * (t2 * y + (1 - t2) * (t * x + (1 - t) * z ));
 
 							g2 += u * (g1 - g2);
 							g4 += u * (g3 - g4);
@@ -782,56 +782,56 @@ package skyboy.math { /*nl.ronvalstar.math*/
 							g1 = (( -(hash & 1) | 1) * (t * x1 + (1 - t) * y1));
 							t = int(hash == (12 | (hash & 2)));
 							t2 = int(hash < 4);
-							g1 += ((int(!(hash & 2)) << 1) - 1) * (t2 * y1 + (1 - t2) * (t * x1 + (1 - t) * z1 ));
+							g1 += ((~hash & 2) - 1) * (t2 * y1 + (1 - t2) * (t * x1 + (1 - t) * z1 ));
 
 							hash = p[AB + 1] & 15;
 							t = int(hash < 8);
 							g2 = (( -(hash & 1) | 1) * (t * x + (1 - t) * y1));
 							t = int(hash == (12 | (hash & 2)));
 							t2 = int(hash < 4);
-							g2 += ((int(!(hash & 2)) << 1) - 1) * (t2 * y1 + (1 - t2) * (t * x + (1 - t) * z1 ));
+							g2 += ((~hash & 2) - 1) * (t2 * y1 + (1 - t2) * (t * x + (1 - t) * z1 ));
 
 							hash = p[BA + 1] & 15;
 							t = int(hash < 8);
 							g3 = (( -(hash & 1) | 1) * (t * x1 + (1 - t) * y));
 							t = int(hash == (12 | (hash & 2)));
 							t2 = int(hash < 4);
-							g3 += ((int(!(hash & 2)) << 1) - 1) * (t2 * y + (1 - t2) * (t * x1 + (1 - t) * z1 ));
+							g3 += ((~hash & 2) - 1) * (t2 * y + (1 - t2) * (t * x1 + (1 - t) * z1 ));
 
 							hash = p[AA + 1] & 15;
 							t = int(hash < 8);
 							g4 = ((-(hash & 1) | 1)* (t * x + (1 - t) * y));
 							t = int(hash == (12 | (hash & 2)));
 							t2 = int(hash < 4);
-							g4 += ((int(!(hash & 2)) << 1) - 1) * (t2 * y + (1 - t2) * (t * x + (1 - t) * z1 ));
+							g4 += ((~hash & 2) - 1) * (t2 * y + (1 - t2) * (t * x + (1 - t) * z1 ));
 
 							hash = p[BB] & 15;
 							t = int(hash < 8);
 							g5 = (( -(hash & 1) | 1) * (t * x1 + (1 - t) * y1));
 							t = int(hash == (12 | (hash & 2)));
 							t2 = int(hash < 4);
-							g5 += ((int(!(hash & 2)) << 1) - 1) * (t2 * y1 + (1 - t2) * (t * x1 + (1 - t) * z ));
+							g5 += ((~hash & 2) - 1) * (t2 * y1 + (1 - t2) * (t * x1 + (1 - t) * z ));
 
 							hash = p[AB] & 15;
 							t = int(hash < 8);
 							g6 = (( -(hash & 1) | 1) * (t * x + (1 - t) * y1));
 							t = int(hash == (12 | (hash & 2)));
 							t2 = int(hash < 4);
-							g6 += ((int(!(hash & 2)) << 1) - 1) * (t2 * y1 + (1 - t2) * (t * x + (1 - t) * z ));
+							g6 += ((~hash & 2) - 1) * (t2 * y1 + (1 - t2) * (t * x + (1 - t) * z ));
 
 							hash = p[BA] & 15;
 							t = int(hash < 8);
 							g7 = (( -(hash & 1) | 1) * (t * x1 + (1 - t) * y));
 							t = int(hash == (12 | (hash & 2)));
 							t2 = int(hash < 4);
-							g7 += ((int(!(hash & 2)) << 1) - 1) * (t2 * y + (1 - t2) * (t * x1 + (1 - t) * z ));
+							g7 += ((~hash & 2) - 1) * (t2 * y + (1 - t2) * (t * x1 + (1 - t) * z ));
 
 							hash = p[AA] & 15;
 							t = int(hash < 8);
 							g8 = (( -(hash & 1) | 1) * (t * x + (1 - t) * y));
 							t = int(hash == (12 | (hash & 2)));
 							t2 = int(hash < 4);
-							g8 += ((int(!(hash & 2)) << 1) - 1) * (t2 * y + (1 - t2) * (t * x + (1 - t) * z ));
+							g8 += ((~hash & 2) - 1) * (t2 * y + (1 - t2) * (t * x + (1 - t) * z ));
 
 							g2 += u * (g1 - g2);
 							g4 += u * (g3 - g4);
@@ -881,56 +881,56 @@ package skyboy.math { /*nl.ronvalstar.math*/
 							g1 = (( -(hash & 1) | 1) * (t * x1 + (1 - t) * y1));
 							t = int(hash == (12 | (hash & 2)));
 							t2 = int(hash < 4);
-							g1 += ((int(!(hash & 2)) << 1) - 1) * (t2 * y1 + (1 - t2) * (t * x1 + (1 - t) * z1 ));
+							g1 += ((~hash & 2) - 1) * (t2 * y1 + (1 - t2) * (t * x1 + (1 - t) * z1 ));
 
 							hash = p[AB + 1] & 15;
 							t = int(hash < 8);
 							g2 = (( -(hash & 1) | 1) * (t * x + (1 - t) * y1));
 							t = int(hash == (12 | (hash & 2)));
 							t2 = int(hash < 4);
-							g2 += ((int(!(hash & 2)) << 1) - 1) * (t2 * y1 + (1 - t2) * (t * x + (1 - t) * z1 ));
+							g2 += ((~hash & 2) - 1) * (t2 * y1 + (1 - t2) * (t * x + (1 - t) * z1 ));
 
 							hash = p[BA + 1] & 15;
 							t = int(hash < 8);
 							g3 = (( -(hash & 1) | 1) * (t * x1 + (1 - t) * y));
 							t = int(hash == (12 | (hash & 2)));
 							t2 = int(hash < 4);
-							g3 += ((int(!(hash & 2)) << 1) - 1) * (t2 * y + (1 - t2) * (t * x1 + (1 - t) * z1 ));
+							g3 += ((~hash & 2) - 1) * (t2 * y + (1 - t2) * (t * x1 + (1 - t) * z1 ));
 
 							hash = p[AA + 1] & 15;
 							t = int(hash < 8);
 							g4 = ((-(hash & 1) | 1)* (t * x + (1 - t) * y));
 							t = int(hash == (12 | (hash & 2)));
 							t2 = int(hash < 4);
-							g4 += ((int(!(hash & 2)) << 1) - 1) * (t2 * y + (1 - t2) * (t * x + (1 - t) * z1 ));
+							g4 += ((~hash & 2) - 1) * (t2 * y + (1 - t2) * (t * x + (1 - t) * z1 ));
 
 							hash = p[BB] & 15;
 							t = int(hash < 8);
 							g5 = (( -(hash & 1) | 1) * (t * x1 + (1 - t) * y1));
 							t = int(hash == (12 | (hash & 2)));
 							t2 = int(hash < 4);
-							g5 += ((int(!(hash & 2)) << 1) - 1) * (t2 * y1 + (1 - t2) * (t * x1 + (1 - t) * z ));
+							g5 += ((~hash & 2) - 1) * (t2 * y1 + (1 - t2) * (t * x1 + (1 - t) * z ));
 
 							hash = p[AB] & 15;
 							t = int(hash < 8);
 							g6 = (( -(hash & 1) | 1) * (t * x + (1 - t) * y1));
 							t = int(hash == (12 | (hash & 2)));
 							t2 = int(hash < 4);
-							g6 += ((int(!(hash & 2)) << 1) - 1) * (t2 * y1 + (1 - t2) * (t * x + (1 - t) * z ));
+							g6 += ((~hash & 2) - 1) * (t2 * y1 + (1 - t2) * (t * x + (1 - t) * z ));
 
 							hash = p[BA] & 15;
 							t = int(hash < 8);
 							g7 = (( -(hash & 1) | 1) * (t * x1 + (1 - t) * y));
 							t = int(hash == (12 | (hash & 2)));
 							t2 = int(hash < 4);
-							g7 += ((int(!(hash & 2)) << 1) - 1) * (t2 * y + (1 - t2) * (t * x1 + (1 - t) * z ));
+							g7 += ((~hash & 2) - 1) * (t2 * y + (1 - t2) * (t * x1 + (1 - t) * z ));
 
 							hash = p[AA] & 15;
 							t = int(hash < 8);
 							g8 = (( -(hash & 1) | 1) * (t * x + (1 - t) * y));
 							t = int(hash == (12 | (hash & 2)));
 							t2 = int(hash < 4);
-							g8 += ((int(!(hash & 2)) << 1) - 1) * (t2 * y + (1 - t2) * (t * x + (1 - t) * z ));
+							g8 += ((~hash & 2) - 1) * (t2 * y + (1 - t2) * (t * x + (1 - t) * z ));
 
 							g2 += u * (g1 - g2);
 							g4 += u * (g3 - g4);
@@ -1057,56 +1057,56 @@ package skyboy.math { /*nl.ronvalstar.math*/
 							g1 = (( -(hash & 1) | 1) * (t * x1 + (1 - t) * y1));
 							t = int(hash == (12 | (hash & 2)));
 							t2 = int(hash < 4);
-							g1 += ((int(!(hash & 2)) << 1) - 1) * (t2 * y1 + (1 - t2) * (t * x1 + (1 - t) * z1 ));
+							g1 += ((~hash & 2) - 1) * (t2 * y1 + (1 - t2) * (t * x1 + (1 - t) * z1 ));
 
 							hash = p[AB + 1] & 15;
 							t = int(hash < 8);
 							g2 = (( -(hash & 1) | 1) * (t * x + (1 - t) * y1));
 							t = int(hash == (12 | (hash & 2)));
 							t2 = int(hash < 4);
-							g2 += ((int(!(hash & 2)) << 1) - 1) * (t2 * y1 + (1 - t2) * (t * x + (1 - t) * z1 ));
+							g2 += ((~hash & 2) - 1) * (t2 * y1 + (1 - t2) * (t * x + (1 - t) * z1 ));
 
 							hash = p[BA + 1] & 15;
 							t = int(hash < 8);
 							g3 = (( -(hash & 1) | 1) * (t * x1 + (1 - t) * y));
 							t = int(hash == (12 | (hash & 2)));
 							t2 = int(hash < 4);
-							g3 += ((int(!(hash & 2)) << 1) - 1) * (t2 * y + (1 - t2) * (t * x1 + (1 - t) * z1 ));
+							g3 += ((~hash & 2) - 1) * (t2 * y + (1 - t2) * (t * x1 + (1 - t) * z1 ));
 
 							hash = p[AA + 1] & 15;
 							t = int(hash < 8);
 							g4 = ((-(hash & 1) | 1)* (t * x + (1 - t) * y));
 							t = int(hash == (12 | (hash & 2)));
 							t2 = int(hash < 4);
-							g4 += ((int(!(hash & 2)) << 1) - 1) * (t2 * y + (1 - t2) * (t * x + (1 - t) * z1 ));
+							g4 += ((~hash & 2) - 1) * (t2 * y + (1 - t2) * (t * x + (1 - t) * z1 ));
 
 							hash = p[BB] & 15;
 							t = int(hash < 8);
 							g5 = (( -(hash & 1) | 1) * (t * x1 + (1 - t) * y1));
 							t = int(hash == (12 | (hash & 2)));
 							t2 = int(hash < 4);
-							g5 += ((int(!(hash & 2)) << 1) - 1) * (t2 * y1 + (1 - t2) * (t * x1 + (1 - t) * z ));
+							g5 += ((~hash & 2) - 1) * (t2 * y1 + (1 - t2) * (t * x1 + (1 - t) * z ));
 
 							hash = p[AB] & 15;
 							t = int(hash < 8);
 							g6 = (( -(hash & 1) | 1) * (t * x + (1 - t) * y1));
 							t = int(hash == (12 | (hash & 2)));
 							t2 = int(hash < 4);
-							g6 += ((int(!(hash & 2)) << 1) - 1) * (t2 * y1 + (1 - t2) * (t * x + (1 - t) * z ));
+							g6 += ((~hash & 2) - 1) * (t2 * y1 + (1 - t2) * (t * x + (1 - t) * z ));
 
 							hash = p[BA] & 15;
 							t = int(hash < 8);
 							g7 = (( -(hash & 1) | 1) * (t * x1 + (1 - t) * y));
 							t = int(hash == (12 | (hash & 2)));
 							t2 = int(hash < 4);
-							g7 += ((int(!(hash & 2)) << 1) - 1) * (t2 * y + (1 - t2) * (t * x1 + (1 - t) * z ));
+							g7 += ((~hash & 2) - 1) * (t2 * y + (1 - t2) * (t * x1 + (1 - t) * z ));
 
 							hash = p[AA] & 15;
 							t = int(hash < 8);
 							g8 = (( -(hash & 1) | 1) * (t * x + (1 - t) * y));
 							t = int(hash == (12 | (hash & 2)));
 							t2 = int(hash < 4);
-							g8 += ((int(!(hash & 2)) << 1) - 1) * (t2 * y + (1 - t2) * (t * x + (1 - t) * z ));
+							g8 += ((~hash & 2) - 1) * (t2 * y + (1 - t2) * (t * x + (1 - t) * z ));
 
 							g2 += u * (g1 - g2);
 							g4 += u * (g3 - g4);
@@ -1156,56 +1156,56 @@ package skyboy.math { /*nl.ronvalstar.math*/
 							g1 = (( -(hash & 1) | 1) * (t * x1 + (1 - t) * y1));
 							t = int(hash == (12 | (hash & 2)));
 							t2 = int(hash < 4);
-							g1 += ((int(!(hash & 2)) << 1) - 1) * (t2 * y1 + (1 - t2) * (t * x1 + (1 - t) * z1 ));
+							g1 += ((~hash & 2) - 1) * (t2 * y1 + (1 - t2) * (t * x1 + (1 - t) * z1 ));
 
 							hash = p[AB + 1] & 15;
 							t = int(hash < 8);
 							g2 = (( -(hash & 1) | 1) * (t * x + (1 - t) * y1));
 							t = int(hash == (12 | (hash & 2)));
 							t2 = int(hash < 4);
-							g2 += ((int(!(hash & 2)) << 1) - 1) * (t2 * y1 + (1 - t2) * (t * x + (1 - t) * z1 ));
+							g2 += ((~hash & 2) - 1) * (t2 * y1 + (1 - t2) * (t * x + (1 - t) * z1 ));
 
 							hash = p[BA + 1] & 15;
 							t = int(hash < 8);
 							g3 = (( -(hash & 1) | 1) * (t * x1 + (1 - t) * y));
 							t = int(hash == (12 | (hash & 2)));
 							t2 = int(hash < 4);
-							g3 += ((int(!(hash & 2)) << 1) - 1) * (t2 * y + (1 - t2) * (t * x1 + (1 - t) * z1 ));
+							g3 += ((~hash & 2) - 1) * (t2 * y + (1 - t2) * (t * x1 + (1 - t) * z1 ));
 
 							hash = p[AA + 1] & 15;
 							t = int(hash < 8);
 							g4 = ((-(hash & 1) | 1)* (t * x + (1 - t) * y));
 							t = int(hash == (12 | (hash & 2)));
 							t2 = int(hash < 4);
-							g4 += ((int(!(hash & 2)) << 1) - 1) * (t2 * y + (1 - t2) * (t * x + (1 - t) * z1 ));
+							g4 += ((~hash & 2) - 1) * (t2 * y + (1 - t2) * (t * x + (1 - t) * z1 ));
 
 							hash = p[BB] & 15;
 							t = int(hash < 8);
 							g5 = (( -(hash & 1) | 1) * (t * x1 + (1 - t) * y1));
 							t = int(hash == (12 | (hash & 2)));
 							t2 = int(hash < 4);
-							g5 += ((int(!(hash & 2)) << 1) - 1) * (t2 * y1 + (1 - t2) * (t * x1 + (1 - t) * z ));
+							g5 += ((~hash & 2) - 1) * (t2 * y1 + (1 - t2) * (t * x1 + (1 - t) * z ));
 
 							hash = p[AB] & 15;
 							t = int(hash < 8);
 							g6 = (( -(hash & 1) | 1) * (t * x + (1 - t) * y1));
 							t = int(hash == (12 | (hash & 2)));
 							t2 = int(hash < 4);
-							g6 += ((int(!(hash & 2)) << 1) - 1) * (t2 * y1 + (1 - t2) * (t * x + (1 - t) * z ));
+							g6 += ((~hash & 2) - 1) * (t2 * y1 + (1 - t2) * (t * x + (1 - t) * z ));
 
 							hash = p[BA] & 15;
 							t = int(hash < 8);
 							g7 = (( -(hash & 1) | 1) * (t * x1 + (1 - t) * y));
 							t = int(hash == (12 | (hash & 2)));
 							t2 = int(hash < 4);
-							g7 += ((int(!(hash & 2)) << 1) - 1) * (t2 * y + (1 - t2) * (t * x1 + (1 - t) * z ));
+							g7 += ((~hash & 2) - 1) * (t2 * y + (1 - t2) * (t * x1 + (1 - t) * z ));
 
 							hash = p[AA] & 15;
 							t = int(hash < 8);
 							g8 = (( -(hash & 1) | 1) * (t * x + (1 - t) * y));
 							t = int(hash == (12 | (hash & 2)));
 							t2 = int(hash < 4);
-							g8 += ((int(!(hash & 2)) << 1) - 1) * (t2 * y + (1 - t2) * (t * x + (1 - t) * z ));
+							g8 += ((~hash & 2) - 1) * (t2 * y + (1 - t2) * (t * x + (1 - t) * z ));
 
 							g2 += u * (g1 - g2);
 							g4 += u * (g3 - g4);
@@ -1255,56 +1255,56 @@ package skyboy.math { /*nl.ronvalstar.math*/
 							g1 = (( -(hash & 1) | 1) * (t * x1 + (1 - t) * y1));
 							t = int(hash == (12 | (hash & 2)));
 							t2 = int(hash < 4);
-							g1 += ((int(!(hash & 2)) << 1) - 1) * (t2 * y1 + (1 - t2) * (t * x1 + (1 - t) * z1 ));
+							g1 += ((~hash & 2) - 1) * (t2 * y1 + (1 - t2) * (t * x1 + (1 - t) * z1 ));
 
 							hash = p[AB + 1] & 15;
 							t = int(hash < 8);
 							g2 = (( -(hash & 1) | 1) * (t * x + (1 - t) * y1));
 							t = int(hash == (12 | (hash & 2)));
 							t2 = int(hash < 4);
-							g2 += ((int(!(hash & 2)) << 1) - 1) * (t2 * y1 + (1 - t2) * (t * x + (1 - t) * z1 ));
+							g2 += ((~hash & 2) - 1) * (t2 * y1 + (1 - t2) * (t * x + (1 - t) * z1 ));
 
 							hash = p[BA + 1] & 15;
 							t = int(hash < 8);
 							g3 = (( -(hash & 1) | 1) * (t * x1 + (1 - t) * y));
 							t = int(hash == (12 | (hash & 2)));
 							t2 = int(hash < 4);
-							g3 += ((int(!(hash & 2)) << 1) - 1) * (t2 * y + (1 - t2) * (t * x1 + (1 - t) * z1 ));
+							g3 += ((~hash & 2) - 1) * (t2 * y + (1 - t2) * (t * x1 + (1 - t) * z1 ));
 
 							hash = p[AA + 1] & 15;
 							t = int(hash < 8);
 							g4 = ((-(hash & 1) | 1)* (t * x + (1 - t) * y));
 							t = int(hash == (12 | (hash & 2)));
 							t2 = int(hash < 4);
-							g4 += ((int(!(hash & 2)) << 1) - 1) * (t2 * y + (1 - t2) * (t * x + (1 - t) * z1 ));
+							g4 += ((~hash & 2) - 1) * (t2 * y + (1 - t2) * (t * x + (1 - t) * z1 ));
 
 							hash = p[BB] & 15;
 							t = int(hash < 8);
 							g5 = (( -(hash & 1) | 1) * (t * x1 + (1 - t) * y1));
 							t = int(hash == (12 | (hash & 2)));
 							t2 = int(hash < 4);
-							g5 += ((int(!(hash & 2)) << 1) - 1) * (t2 * y1 + (1 - t2) * (t * x1 + (1 - t) * z ));
+							g5 += ((~hash & 2) - 1) * (t2 * y1 + (1 - t2) * (t * x1 + (1 - t) * z ));
 
 							hash = p[AB] & 15;
 							t = int(hash < 8);
 							g6 = (( -(hash & 1) | 1) * (t * x + (1 - t) * y1));
 							t = int(hash == (12 | (hash & 2)));
 							t2 = int(hash < 4);
-							g6 += ((int(!(hash & 2)) << 1) - 1) * (t2 * y1 + (1 - t2) * (t * x + (1 - t) * z ));
+							g6 += ((~hash & 2) - 1) * (t2 * y1 + (1 - t2) * (t * x + (1 - t) * z ));
 
 							hash = p[BA] & 15;
 							t = int(hash < 8);
 							g7 = (( -(hash & 1) | 1) * (t * x1 + (1 - t) * y));
 							t = int(hash == (12 | (hash & 2)));
 							t2 = int(hash < 4);
-							g7 += ((int(!(hash & 2)) << 1) - 1) * (t2 * y + (1 - t2) * (t * x1 + (1 - t) * z ));
+							g7 += ((~hash & 2) - 1) * (t2 * y + (1 - t2) * (t * x1 + (1 - t) * z ));
 
 							hash = p[AA] & 15;
 							t = int(hash < 8);
 							g8 = (( -(hash & 1) | 1) * (t * x + (1 - t) * y));
 							t = int(hash == (12 | (hash & 2)));
 							t2 = int(hash < 4);
-							g8 += ((int(!(hash & 2)) << 1) - 1) * (t2 * y + (1 - t2) * (t * x + (1 - t) * z ));
+							g8 += ((~hash & 2) - 1) * (t2 * y + (1 - t2) * (t * x + (1 - t) * z ));
 
 							g2 += u * (g1 - g2);
 							g4 += u * (g3 - g4);
@@ -1354,56 +1354,56 @@ package skyboy.math { /*nl.ronvalstar.math*/
 							g1 = (( -(hash & 1) | 1) * (t * x1 + (1 - t) * y1));
 							t = int(hash == (12 | (hash & 2)));
 							t2 = int(hash < 4);
-							g1 += ((int(!(hash & 2)) << 1) - 1) * (t2 * y1 + (1 - t2) * (t * x1 + (1 - t) * z1 ));
+							g1 += ((~hash & 2) - 1) * (t2 * y1 + (1 - t2) * (t * x1 + (1 - t) * z1 ));
 
 							hash = p[AB + 1] & 15;
 							t = int(hash < 8);
 							g2 = (( -(hash & 1) | 1) * (t * x + (1 - t) * y1));
 							t = int(hash == (12 | (hash & 2)));
 							t2 = int(hash < 4);
-							g2 += ((int(!(hash & 2)) << 1) - 1) * (t2 * y1 + (1 - t2) * (t * x + (1 - t) * z1 ));
+							g2 += ((~hash & 2) - 1) * (t2 * y1 + (1 - t2) * (t * x + (1 - t) * z1 ));
 
 							hash = p[BA + 1] & 15;
 							t = int(hash < 8);
 							g3 = (( -(hash & 1) | 1) * (t * x1 + (1 - t) * y));
 							t = int(hash == (12 | (hash & 2)));
 							t2 = int(hash < 4);
-							g3 += ((int(!(hash & 2)) << 1) - 1) * (t2 * y + (1 - t2) * (t * x1 + (1 - t) * z1 ));
+							g3 += ((~hash & 2) - 1) * (t2 * y + (1 - t2) * (t * x1 + (1 - t) * z1 ));
 
 							hash = p[AA + 1] & 15;
 							t = int(hash < 8);
 							g4 = ((-(hash & 1) | 1)* (t * x + (1 - t) * y));
 							t = int(hash == (12 | (hash & 2)));
 							t2 = int(hash < 4);
-							g4 += ((int(!(hash & 2)) << 1) - 1) * (t2 * y + (1 - t2) * (t * x + (1 - t) * z1 ));
+							g4 += ((~hash & 2) - 1) * (t2 * y + (1 - t2) * (t * x + (1 - t) * z1 ));
 
 							hash = p[BB] & 15;
 							t = int(hash < 8);
 							g5 = (( -(hash & 1) | 1) * (t * x1 + (1 - t) * y1));
 							t = int(hash == (12 | (hash & 2)));
 							t2 = int(hash < 4);
-							g5 += ((int(!(hash & 2)) << 1) - 1) * (t2 * y1 + (1 - t2) * (t * x1 + (1 - t) * z ));
+							g5 += ((~hash & 2) - 1) * (t2 * y1 + (1 - t2) * (t * x1 + (1 - t) * z ));
 
 							hash = p[AB] & 15;
 							t = int(hash < 8);
 							g6 = (( -(hash & 1) | 1) * (t * x + (1 - t) * y1));
 							t = int(hash == (12 | (hash & 2)));
 							t2 = int(hash < 4);
-							g6 += ((int(!(hash & 2)) << 1) - 1) * (t2 * y1 + (1 - t2) * (t * x + (1 - t) * z ));
+							g6 += ((~hash & 2) - 1) * (t2 * y1 + (1 - t2) * (t * x + (1 - t) * z ));
 
 							hash = p[BA] & 15;
 							t = int(hash < 8);
 							g7 = (( -(hash & 1) | 1) * (t * x1 + (1 - t) * y));
 							t = int(hash == (12 | (hash & 2)));
 							t2 = int(hash < 4);
-							g7 += ((int(!(hash & 2)) << 1) - 1) * (t2 * y + (1 - t2) * (t * x1 + (1 - t) * z ));
+							g7 += ((~hash & 2) - 1) * (t2 * y + (1 - t2) * (t * x1 + (1 - t) * z ));
 
 							hash = p[AA] & 15;
 							t = int(hash < 8);
 							g8 = (( -(hash & 1) | 1) * (t * x + (1 - t) * y));
 							t = int(hash == (12 | (hash & 2)));
 							t2 = int(hash < 4);
-							g8 += ((int(!(hash & 2)) << 1) - 1) * (t2 * y + (1 - t2) * (t * x + (1 - t) * z ));
+							g8 += ((~hash & 2) - 1) * (t2 * y + (1 - t2) * (t * x + (1 - t) * z ));
 
 							g2 += u * (g1 - g2);
 							g4 += u * (g3 - g4);
@@ -1509,7 +1509,10 @@ package skyboy.math { /*nl.ronvalstar.math*/
 			}
 		}
 
-		public function OptimizedPerlin():void {
+		public function OptimizedPerlin(seed:Number = NaN, octaves:int = 4, falloff:Number = 0.5):void {
+			if (seed == seed) iSeed = seed;
+			if (falloff == falloff) fPersistence = falloff;
+			iOctaves = octaves;
 			seedOffset();
 			octFreqPers();
 		}
@@ -1556,4 +1559,4 @@ package skyboy.math { /*nl.ronvalstar.math*/
 	}
 }
 import skyboy.math.OptimizedPerlin
-internal const oNoise:OptimizedPerlin = new OptimizedPerlin;
+internal const oNoise:OptimizedPerlin = new OptimizedPerlin(Math.random() * Number.MAX_VALUE);
