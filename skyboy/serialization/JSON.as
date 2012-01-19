@@ -316,7 +316,7 @@ package skyboy.serialization {
 			while (i < e) {
 				c = data.charCodeAt(i++);
 				if (int(c < 0x20) | int(c > 0x7E)) { // ' ' | '~'
-					t = int(c > 0xFFFF);
+					t = int(c <= 0xFFFF);
 					t *= 0xFFFF;
 					rtn.writeShort(0x5C75); // \u
 					rtn.writeInt(enc[c & t]);
@@ -341,7 +341,7 @@ package skyboy.serialization {
 			while (i < e) {
 				c = data.charCodeAt(i++);
 				if (int(c < 0x20) | int(c > 0x7E)) { // ' ' | '~'
-					t = int(c > 0xFFFF);
+					t = int(c <= 0xFFFF);
 					t *= 0xFFFF;
 					rtn.writeShort(0x5C75); // \u
 					rtn.writeInt(enc[c & t]);
@@ -693,10 +693,10 @@ package skyboy.serialization {
 				if (l > 1) {
 					throw new Error("Malformed JSON at: " + i + ", '" + data.substr(i, l) + (e ? "'. " + e : "'."), errorID);
 				} else {
-					throw new Error("Malformed JSON at: " + this.i + ' ' + i + ", " + data.charAt(i) + (e ? ". " + e : '.'), errorID);
+					throw new Error("Malformed JSON at: " + i + ", '" + data.charAt(i) + (e ? "'. " + e : '.'), errorID);
 				}
 			} else {
-				throw new Error("Malformed JSON at char: " + i + ", " + data.charAt(i) + (e ? ". " + e : '.'), errorID);
+				throw new Error("Malformed JSON at char: " + i + ", '" + data.charAt(i) + (e ? "'. " + e : '.'), errorID);
 			}
 		}
 	}
