@@ -11,17 +11,17 @@ package skyboy.components {
 	 * @author skyboy
 	 */
 	public class TabBar extends Sprite {
-		private var leftScrollButton:IButton;
-		private var rightScrollButton:IButton;
-		private var newTabButton:ITabButton;
-		private var tabContainer:DisplayObjectContainer;
-		private var scrollCapture:TextField;
-		private var tabs:Vector.<ITab> = new Vector.<ITab>();
-		private var sRect:Rectangle;
-		private var selectedTab:ITab;
-		private var scrollSpeed:Number = 75, scrollStop:Number = 0;
-		private var scrollTimer:Timer = new Timer(20);
-		private var tWidths:Number = 0;
+		protected var leftScrollButton:IButton;
+		protected var rightScrollButton:IButton;
+		protected var newTabButton:ITabButton;
+		protected var tabContainer:DisplayObjectContainer;
+		protected var scrollCapture:TextField;
+		protected var tabs:Vector.<ITab> = new Vector.<ITab>();
+		protected var sRect:Rectangle;
+		protected var selectedTab:ITab, hovering:IHover;
+		protected var scrollSpeed:Number = 75, scrollStop:Number = 0;
+		protected var scrollTimer:Timer = new Timer(20);
+		protected var tWidths:Number = 0;
 		public override function set scrollRect(a:Rectangle):void {};
 		public override function get scrollRect():Rectangle {return new Rectangle};
 		public function TabBar(lSB:IButton, rSB:IButton, nTB:ITabButton, tC:DisplayObjectContainer, tab:ITab = null):void {
@@ -46,6 +46,7 @@ package skyboy.components {
 			}
 			addEventListener(MouseEvent.CLICK, onClick);
 			addEventListener(MouseEvent.MOUSE_WHEEL, onScroll);
+			addEventListener(MouseEvent.MOUSE_MOVE, onMove);
 			scrollTimer.addEventListener(TimerEvent.TIMER, tick);
 			if (w != w) w = 150;
 			width = w;
@@ -82,7 +83,17 @@ package skyboy.components {
 			a.height = y;
 			super.scrollRect = a;
 		}
-		private function onScroll(e:MouseEvent):void {
+		protected function onMove(e:MouseEvent):void {
+			var items:Array = getObjectsUnderPoint(new Point(mouseX, mouseY));
+			var len:int = items.length - 1;
+			if (!len) return;
+			var over:IHover;
+			while (!over && len--) over = items[len] as IHover;
+			if (hovering) hovering.hover(false);
+			if (over) over.hover(true);
+			hovering = over;
+		}
+		protected function onScroll(e:MouseEvent):void {
 			var s:int = -e.delta;
 			e.preventDefault();
 			scrollCapture.scrollV = 72;
@@ -90,8 +101,8 @@ package skyboy.components {
 			if (s > 0) end += sRect.width;
 			scrollTo(end);
 		}
-		private function onClick(e:MouseEvent):void {
-			var items:Array = getObjectsUnderPoint(new Point(e.stageX, e.stageY));
+		protected function onClick(e:MouseEvent):void {
+			var items:Array = getObjectsUnderPoint(new Point(mouseX, mouseY));
 			var len:int = items.length - 1;
 			if (!len) return;
 			var button:IButton = items[0] as IButton;
@@ -110,19 +121,16 @@ package skyboy.components {
 					}
 				}
 			} else {
-				while (!tab && len) tab = items[--len] as ITab;
+				while (!tab && len--) tab = items[len] as ITab;
 				if (tab) {
 					if (tab.closeable()) {
-						if (tab.pointCloses(e.stageX, e.stageY)) {
+						if (tab.pointCloses(tabContainer.mouseX, tabContainer.mouseY)) {
 							removeTab(tab);
 							return;
 						}
 					}
 					if (tab != selectedTab) {
-						if (selectedTab) selectedTab.deselect();
-						tab.lastTab = selectedTab;
-						tab.select();
-						selectedTab = tab;
+						focusTab(tab);
 						scroll(tab);
 					}
 				}
@@ -142,10 +150,7 @@ package skyboy.components {
 			tabContainer.addChild(DisplayObject(tab));
 			tWidths += tab.width;
 			tab.x = x;
-			tab.select();
-			if (selectedTab) selectedTab.deselect();
-			tab.lastTab = selectedTab;
-			selectedTab = tab;
+			focusTab(tab);
 			tabs.push(tab);
 			scrollTo(x + tab.width);
 		}
@@ -154,13 +159,41 @@ package skyboy.components {
 				addTab(tab);
 			}
 		}
+		public function focusTab(tab:ITab):void {
+			if (tab && tabContainer.contains(DisplayObject(tab))) {
+				tab.lastTab = selectedTab;
+				tab.select();
+				if (selectedTab) selectedTab.deselect();
+				selectedTab = tab;
+			}
+		}
 		public function newTab():void {
 			addTab(newTabButton.newTab());
+		}
+		public function nextTab():Boolean {
+			tabs.sort(srt);
+			var i:int = tabs.indexOf(selectedTab) + 1;
+			if (uint(i) < uint(tabs.length)) {
+				focusTab(tabs[i]);
+				return true;
+			}
+			return false;
+		}
+		public function prevTab():Boolean {
+			tabs.sort(srt);
+			var i:int = tabs.indexOf(selectedTab) - 1;
+			if (uint(i) < uint(tabs.length)) {
+				focusTab(tabs[i]);
+				return true;
+			}
+			return false;
 		}
 		public function removeTab(tab:ITab):void {
 			if (tab && tabContainer.contains(DisplayObject(tab))) {
 				tabs.sort(srt);
 				var i:int = tabs.indexOf(tab);
+				tabContainer.removeChild(DisplayObject(tab));
+				tWidths -= tab.width;
 				tab.close();
 				if (i >= 0) {
 					tabs.splice(i, 1);
@@ -179,8 +212,6 @@ package skyboy.components {
 						scroll(selectedTab);
 					}
 				}
-				tWidths -= tab.width;
-				tabContainer.removeChild(DisplayObject(tab));
 				var len:int = tabs.length;
 				var pW:Number = tab.width;
 				while (i < len) {
@@ -250,10 +281,18 @@ package skyboy.components {
 			}
 		}
 		public function setScrollSpeed(distance:Number):void {
-			if ((distance * 0) == 0) return;
+			if ((distance * 0) != 0) return;
 			scrollSpeed = Math.max(Math.abs(distance), 5);
 		}
-		private function tick(e:TimerEvent):void {
+		public function updateTabPositions():void {
+			tabs.sort(srt);
+			var x:Number = 0;
+			for each(var tab:ITab in tabs) {
+				tab.x = x;
+				x += tab.width;
+			}
+		}
+		protected function tick(e:TimerEvent):void {
 			scrollTimer.stop();
 			scrollTimer.reset();
 			scrollTo(scrollStop);
