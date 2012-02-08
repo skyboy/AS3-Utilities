@@ -1,9 +1,9 @@
-package {
+package skyboy.interfaces.tabbar {
 	/**
 	 * ...
 	 * @author skyboy
 	 */
 	public interface IHover {
-		public function hover(over:Boolean):void;
+		function hover(over:Boolean):void;
 	}
 }

@@ -46,13 +46,16 @@ package skyboy.components {
 			}
 			addEventListener(MouseEvent.CLICK, onClick);
 			addEventListener(MouseEvent.MOUSE_WHEEL, onScroll);
+			cap.addEventListener(MouseEvent.MOUSE_WHEEL, onScroll);
 			addEventListener(MouseEvent.MOUSE_MOVE, onMove);
 			scrollTimer.addEventListener(TimerEvent.TIMER, tick);
 			if (w != w) w = 150;
 			width = w;
+			cap.width = w;
 			w = Math.max(lSB.height, tC.height, nTB.height, rSB.height)
 			if (w != w) w = 20;
 			height = w;
+			cap.height = w;
 			lSB.disable();
 			rSB.disable();
 			addTab(tab);
@@ -84,9 +87,9 @@ package skyboy.components {
 			super.scrollRect = a;
 		}
 		protected function onMove(e:MouseEvent):void {
-			var items:Array = getObjectsUnderPoint(new Point(mouseX, mouseY));
+			var items:Array = getObjectsUnderPoint(new Point(e.stageX, e.stageY));
 			var len:int = items.length - 1;
-			if (!len) return;
+			if (len < 1) return;
 			var over:IHover;
 			while (!over && len--) over = items[len] as IHover;
 			if (hovering) hovering.hover(false);
@@ -96,15 +99,17 @@ package skyboy.components {
 		protected function onScroll(e:MouseEvent):void {
 			var s:int = -e.delta;
 			e.preventDefault();
+			e.stopPropagation();
+			e.stopImmediatePropagation();
 			scrollCapture.scrollV = 72;
 			var end:Number = sRect.x + (scrollSpeed * s);
 			if (s > 0) end += sRect.width;
 			scrollTo(end);
 		}
 		protected function onClick(e:MouseEvent):void {
-			var items:Array = getObjectsUnderPoint(new Point(mouseX, mouseY));
+			var items:Array = getObjectsUnderPoint(new Point(e.stageX, e.stageY));
 			var len:int = items.length - 1;
-			if (!len) return;
+			if (len < 1) return;
 			var button:IButton = items[0] as IButton;
 			var tab:ITab;
 			if (button) {
