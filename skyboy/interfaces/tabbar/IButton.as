@@ -1,5 +1,6 @@
 package skyboy.interfaces.tabbar {
 	import flash.display.DisplayObject;
+	import flash.geom.Rectangle;
 	
 	/**
 	 * ...
