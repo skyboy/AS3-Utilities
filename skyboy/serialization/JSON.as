@@ -55,10 +55,11 @@ package skyboy.serialization {
 	 * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 	 */
 	final public class JSON {
-		private static const instance:JSON = new JSON();
+		private static var instance:JSON;
 		public function JSON() {
-			if (instance) throw new Error("This class has no instance methods.")
-			strArr.length = 0xFFFF; strArr.endian = Endian.LITTLE_ENDIAN;
+			if (instance) throw new Error("This class has no instance methods.");
+			instance = this;
+			strArr.length = 0xFFFF; strArr.endian = Endian.BIG_ENDIAN;
 			var i:int = 0x10000;
 			while (i--) {
 				encRL[i] = (0x30303030 | ((i & 0xF000) << 12) | ((i & 0xF00) << 8) | ((i & 0xF0) << 4) | (i & 0xF)) +
@@ -67,6 +68,17 @@ package skyboy.serialization {
 				((int((i & 0xF0) > 0x90) * 0x70) << 4) |
 				((int((i & 0xF) > 0x9) * 0x7)));
 			}
+			i = 0x7F;
+			while (i-- > 0x20) {
+				encRL[i] = i;
+			}
+			encRLs[0x08] = 0x5C62;
+			encRLs[0x0C] = 0x5C66;
+			encRLs[0x0A] = 0x5C6E;
+			encRLs[0x0D] = 0x5C72;
+			encRLs[0x09] = 0x5C74;
+			encRLs[0x22] = 0x5C22;
+			encRLs[0x5C] = 0x5C5C;
 			i = 0x80;
 			while (i--) {
 				encD[i] = i;
@@ -76,35 +88,320 @@ package skyboy.serialization {
 			encD[0x6E] = 10;
 			encD[0x72] = 13;
 			encD[0x74] = 9;
-			encMap[Vector.<int>] 	= encodeVecI;
-			encMap[Vector.<uint>] 	= encodeVecU;
-			encMap[Vector.<Number>] = encodeVecN;
-			encMap[Vector.<*>] 		= encodeVecO;
-			encMap[Array] 			= encodeArry;
-			encMap[String] 			= encodeString;
-			encMap['string'] 		= encodeString;
-			encMap[XML] 			= encodeXML;
-			encMap['xml'] 			= encodeXML;
-			encMap[XMLList] 		= encodeXMLL;
-			encMap[Date] 			= encodeDate;
-			encMap[Number] 			= encodeNumber;
-			encMap['number'] 		= encodeNumber;
-			encMap[Dictionary] 		= encodeDict;
-			encMap[Object] 			= encodeObject;
-			encMap[Boolean] 		= encodeBool;
-			encMap['boolean'] 		= encodeBool;
-			encMap['object'] 		= encodeObj2; // nulls are of type object
-			encMap['undefined'] 	= encodeObj2;
+			encMap[Vector.<int>] 	= new eVI(this);
+			encMap[Vector.<uint>] 	= new eVU(this);
+			encMap[Vector.<Number>] = new eVN(this);
+			encMap[Vector.<*>] 		= new eVO(this);
+			encMap[Array] 			= new eA(this);
+			encMap[String] 			= new eS(this);
+			encMap['string'] 		= encMap[String];
+			encMap[XML] 			= new eX(this);
+			encMap['xml'] 			= encMap[XML];
+			encMap[XMLList] 		= new eXL(this);
+			encMap[Date] 			= new eDT(this);
+			encMap[Number] 			= new eN(this);
+			encMap['number'] 		= encMap[Number];
+			encMap[Dictionary] 		= new eD(this);
+			encMap[Object] 			= new eO(this);
+			encMap[Boolean] 		= new eB(this);
+			encMap['boolean'] 		= encMap[Boolean];
+			encMap['object'] 		= new eO2(this); // nulls are of type object
+			encMap['undefined'] 	= encMap['object'];
 		}
+		//{ STATE
 		private var containsSlash:int;
 		private const strArr:ByteArray = new ByteArray();
 		private const encRL:Vector.<int> = new Vector.<int>(0x10000, true);
+		private const encRLs:Vector.<int> = new Vector.<int>(0x5D, true);
 		private const encD:Vector.<int> = new Vector.<int>(0x80, true);
 		private const encMap:Dictionary = new Dictionary();
 		private var i:int;
-		
+		//}
+		//{ DEBUGVALS
+		public static function get index():int {
+			return instance.i;
+		}
 		public static const errorID:int = 0x4A534F4E;
-		
+		//}
+		//{ ENCODING
+		private function tryToJSON(data:*):String {
+			try {
+				return data.toJSON() as String;
+			} catch (e:ArgumentError) {
+				if (e.errorID != 1063) throw e;
+			}
+			return null;
+		}
+		private function encode(data:Object):String {
+			if (data == null) return "null";
+			var ret:ByteArray = strArr, c:String, enc:Vector.<int> = encRL;
+			ret.position = 0;
+			if ("toJSON" in data) if (data.toJSON is Function) {
+				c = tryToJSON(data);
+				if (c !== null) return c;
+			}
+			sky::encodeObj2(data, ret, enc, encMap);
+			i = ret.position;
+			ret.position = 0;
+			c = ret.readUTFBytes(i);
+			ret.length = 0;
+			return c;
+		}
+		public static function encode(data:*):String {
+			return instance.encode(data);
+		}
+		public static function stringify(data:*):String {
+			return instance.encode(data);
+		}
+		public static function toJSON(data:* = null):String {
+			return instance.encode(data);
+		}
+		//{ TYPES
+		sky function encodeArry(arr:Array, rtn:ByteArray, enc:Vector.<int>, map:Dictionary):void {
+			var e:int = arr.length - 1;
+			rtn.writeByte(0x5B); // [
+			if (e >= 0) {
+				for (i = 0; i < e; ++i) {
+					el = arr[i];
+					f = map[typeof el];
+					f.f(el, rtn, enc, map);
+					rtn.writeByte(0x2C); // ,
+				}
+				el = arr[i];
+				f = map[typeof el];
+				f.f(el, rtn, enc, map);
+			}
+			rtn.writeByte(0x5D);// ]
+			var i:int, f:F, el:*;
+		}
+		sky function encodeVecO(arr:*, rtn:ByteArray, enc:Vector.<int>, map:Dictionary):void { // * because vector can be of any type other than number/int/uint and no two vector 'types' are compatible
+			if (arr is Vector.<Boolean>) {
+				sky::encodeVecB(arr, rtn);
+				return;
+			} else if (arr is Vector.<String>) {
+				sky::encodeVecS(arr, rtn, enc);
+				return;
+			}
+			var e:int = arr.length - 1;
+			rtn.writeByte(0x5B); // [
+			if (e >= 0) {
+				for (i = 0; i < e; ++i) {
+					el = arr[i];
+					f = map[typeof el];
+					f.f(el, rtn, enc, map);
+					rtn.writeByte(0x2C); // ,
+				}
+				el = arr[i];
+				f = map[typeof el];
+				f.f(el, rtn, enc, map);
+			}
+			rtn.writeByte(0x5D);// ]
+			return;
+			var i:int, f:F, el:*;
+		}
+		sky function encodeVecN(a:Vector.<Number>, rtn:ByteArray):void {
+			var e:int = a.length - 1;
+			rtn.writeByte(0x5B); // [
+			if (e >= 0) {
+				for (i = 0; i < e; ++i) {
+					sky::encodeNumber(a[i], rtn);
+					rtn.writeByte(0x2C); // ,
+				}
+				sky::encodeNumber(a[i], rtn);
+			}
+			rtn.writeByte(0x5D);// ]
+			return;
+			var i:int;
+		}
+		sky function encodeVecU(a:Vector.<uint>, rtn:ByteArray):void {
+			var e:int = a.length - 1;
+			rtn.writeByte(0x5B); // [
+			if (e >= 0) {
+				for (i = 0; i < e; ++i) {
+					rtn.writeUTFBytes(String(a[i]));
+					rtn.writeByte(0x2C); // ,
+				}
+				rtn.writeUTFBytes(String(a[i]));
+			}
+			rtn.writeByte(0x5D);// ]
+			return;
+			var i:int;
+		}
+		sky function encodeVecI(a:Vector.<int>, rtn:ByteArray):void {
+			var e:int = a.length - 1;
+			rtn.writeByte(0x5B); // [
+			if (e >= 0) {
+				for (i = 0; i < e; ++i) {
+					rtn.writeUTFBytes(String(a[i]));
+					rtn.writeByte(0x2C); // ,
+				}
+				rtn.writeUTFBytes(String(a[i]));
+			}
+			rtn.writeByte(0x5D);// ]
+			return;
+			var i:int;
+		}
+		sky function encodeVecB(a:Vector.<Boolean>, rtn:ByteArray):void {
+			var e:int = a.length - 1;
+			rtn.writeByte(0x5B); // [
+			if (e >= 0) {
+				for (i = 0; i < e; ++i) {
+					if (a[i]) { // Boolean vectors can technically contain null (last test: FP11.1) due to poor Adobe coding.
+						rtn.writeInt(0x74727565); // true
+						rtn.writeByte(0x2C); // ,
+					} else {
+						rtn.writeShort(0x6661); // fa
+						rtn.writeInt(0x6C73652C); // lse,
+					}
+				}
+				rtn.writeUTFBytes(String(a[i]));
+			}
+			rtn.writeByte(0x5D);// ]
+			return;
+			var i:int;
+		}
+		sky function encodeVecS(a:Vector.<String>, rtn:ByteArray, enc:Vector.<int>):void {
+			var e:int = a.length - 1;
+			rtn.writeByte(0x5B); // [
+			if (e >= 0) {
+				for (i = 0; i < e; ++i) {
+					b = a[i] as String;
+					if (b !== null) sky::encodeString(String(a[i] as String), rtn, enc);
+					else rtn.writeInt(0x6E756C6C);
+					rtn.writeByte(0x2C);
+				}
+				b = a[i];
+				if (b !== null) sky::encodeString(String(a[i] as String), rtn, enc);
+				else rtn.writeInt(0x6E756C6C);
+			}
+			rtn.writeByte(0x5D);// ]
+			return;
+			var b:String, i:int;
+		}
+		sky function encodeBool(a:Boolean, rtn:ByteArray, enc:Vector.<int>, map:Dictionary):void {
+			if (a) {
+				rtn.writeInt(0x74727565); // true
+				return;
+			}
+			rtn.writeByte(0x66); // f
+			rtn.writeInt(0x616C7365); // alse
+		}
+		sky function encodeDate(a:Date, rtn:ByteArray, enc:Vector.<int>, map:Dictionary):void {
+			rtn.writeUTFBytes(String(a.getTime()));
+		}
+		sky function encodeDict(dic:Dictionary, rtn:ByteArray, enc:Vector.<int>, map:Dictionary):void {
+			rtn.writeByte(0x7B);// {
+			var a:uint = rtn.position;
+			for (b in dic) {
+				if (b is String) {e = dic[b];
+					sky::encodeString(b, rtn, enc, true);
+					f = map[typeof e];
+					f.f(e, rtn, enc, map);
+					rtn.writeByte(0x2C);
+				} else if (b is Number) {e = dic[b];
+					sky::encodeString(String(b), rtn, enc, true);
+					f = map[typeof e];
+					f.f(e, rtn, enc, map);
+					rtn.writeByte(0x2C);
+				} else if (b is Date) {e = dic[b];
+					sky::encodeString(String((b as Date).getTime()), rtn, enc, true);
+					f = map[typeof e];
+					f.f(e, rtn, enc, map);
+					rtn.writeByte(0x2C);
+				} else if (b is XML) {e = dic[b];
+					sky::encodeString((b as XML).toXMLString(), rtn, enc, true);
+					f = map[typeof e];
+					f.f(e, rtn, enc, map);
+					rtn.writeByte(0x2C);
+				} else if (b is XMLList) {e = dic[b];
+					sky::encodeString((b as XMLList).toXMLString(), rtn, enc, true);
+					f = map[typeof e];
+					f.f(e, rtn, enc, map);
+					rtn.writeByte(0x2C);
+				} else if (b is Boolean) {e = dic[b];
+					sky::encodeString(String(b), rtn, enc, true);
+					f = map[typeof e];
+					f.f(e, rtn, enc, map);
+					rtn.writeByte(0x2C);
+				}
+			}
+			if (rtn.position !== a) rtn.position--;
+			rtn.writeByte(0x7D);// }
+			return;
+			var b:*, e:Object, f:F;
+		}
+		sky function encodeObject(a:Object, rtn:ByteArray, enc:Vector.<int>, map:Dictionary):void {
+			if ("toJSON" in a) if (a.toJSON is Function) {
+				c = tryToJSON(a);
+				if (c !== null) {
+					rtn.writeUTFBytes(c);
+					return;
+				}
+			}
+			rtn.writeByte(0x7B);// {
+			var c:String;
+			for (c in a) {
+				sky::encodeString(c, rtn, enc, true);
+				e = a[c];
+				f = map[typeof e];
+				f.f(e, rtn, enc, map);
+				rtn.writeByte(0x2C);
+			}
+			if (c !== null) rtn.position--;
+			rtn.writeByte(0x7D);// }
+			return;
+			var e:Object, f:F;
+		}
+		sky function encodeObj2(a:Object, rtn:ByteArray, enc:Vector.<int>, map:Dictionary):void {
+			if (!a) {
+				rtn.writeInt(0x6E756C6C);
+				return;
+			}
+			var f:F = map[a.constructor];
+			if (Boolean(f)) {
+				f.f(a, rtn, enc, map);
+				return;
+			}
+			sky::encodeObject(a, rtn, enc, map);
+		}
+		sky function encodeXML(a:XML, rtn:ByteArray, enc:Vector.<int>, map:Dictionary):void {
+			sky::encodeString(a.toXMLString(), rtn, enc);
+		}
+		sky function encodeXMLL(a:XMLList, rtn:ByteArray, enc:Vector.<int>, map:Dictionary):void {
+			sky::encodeString(a.toXMLString(), rtn, enc);
+		}
+		sky function encodeNumber(e:Number, rtn:ByteArray):void {
+			if ((e * 0) !== 0) {
+				rtn.writeByte(0x30);
+				return;
+			}
+			rtn.writeUTFBytes(String(e));
+		}
+		sky function encodeString(data:String, rtn:ByteArray, enc:Vector.<int>, colon:Boolean = false):void {
+			var i:int, e:int = data.length;
+			rtn.writeByte(0x22);// "
+			for (; i < e; ++i) {
+				c = data.charCodeAt(i);
+				if (int(c >= 0x20) & int(c <= 0x7E)) { // highest is 0x7E. common case
+					rtn.writeByte(c);
+				} else {
+					if (int(c === 0x22) | int(c === 0x5C) | int(c === 0x0A) | int(c === 0x0C) | int(c === 0x0D) | int(c === 0x09) | int(c === 0x08)) {
+						rtn.writeShort(encRLs[c]);
+					} else {
+						c = enc[c];
+						rtn.writeShort(0x5C75); // \u
+						rtn.writeInt(c);
+					}
+				}
+			}
+			rtn.writeByte(0x22); // "
+			if (colon) rtn.writeByte(0x3A);// :
+			return;
+			var c:int;
+		}
+		//}
+		//}
+		//{ DECODING
 		private function decode(data:String):* {
 			if (!data) return null;
 			var e:int = data.length;
@@ -140,286 +437,7 @@ package skyboy.serialization {
 		public static function parse(data:String):* {
 			return instance.decode(data);
 		}
-		public static function get index():int {
-			return instance.i;
-		}
-		
-		private function tryToJSON(data:*):String {
-			try {
-				return data.toJSON() as String;
-			} catch (e:ArgumentError) {
-				if (e.errorID != 1063) throw e;
-			}
-			return null;
-		}
-		private function encode(data:Object):String {
-			if (data == null) return "null";
-			var ret:ByteArray = strArr, c:String, enc:Vector.<int> = encRL;
-			ret.position = 0;
-			if ("toJSON" in data) if (data.toJSON is Function) {
-				c = tryToJSON(data);
-				if (c !== null) return c;
-			}
-			var a:Function = encMap[data.constructor];
-			if (Boolean(a)) a(data, ret, enc, encMap);
-			else encodeObject(data, ret, enc, encMap);
-			i = ret.position;
-			ret.position = 0;
-			c = ret.readUTFBytes(i);
-			ret.length = 0;
-			return c;
-		}
-		public static function encode(data:*):String {
-			return instance.encode(data);
-		}
-		public static function stringify(data:*):String {
-			return instance.encode(data);
-		}
-		public static function toJSON(data:* = null):String {
-			return instance.encode(data);
-		}
-		
-		private function encodeArry(arr:Array, rtn:ByteArray, enc:Vector.<int>, map:Dictionary):void {
-			var i:int, e:int = arr.length - 1, f:Function, el:*;
-			rtn.writeByte(0x5B); // [
-			if (e >= 0) {
-				while (i < e) {
-					el = arr[i];
-					f = map[typeof el];
-					f(el, rtn, enc, map);
-					rtn.writeByte(0x2C); // ,
-					++i;
-				}
-				el = arr[i];
-				f = map[typeof e];
-				f(el, rtn, enc, map);
-			}
-			rtn.writeByte(0x5D); // ]
-		}
-		private function encodeVecO(arr:*, rtn:ByteArray, enc:Vector.<int>, map:Dictionary):void { // * because vector can be of any type other than number/int/uint and no two vector 'types' are compatible
-			if (arr is Vector.<Boolean>) {
-				encodeVecB(arr, rtn, enc);
-				return;
-			} else if (arr is Vector.<String>) {
-				encodeVecS(arr, rtn, enc);
-				return;
-			}
-			var i:int, e:int = arr.length - 1, f:Function, el:*;
-			rtn.writeByte(0x5B); // [
-			if (e >= 0) {
-				while (i < e) {
-					el = arr[i];
-					f = map[typeof el];
-					f(el, rtn, enc, map);
-					rtn.writeByte(0x2C); // ,
-					++i;
-					f = null;
-				}
-				el = arr[i];
-				f = map[typeof el];
-				f(el, rtn, enc, map);
-			}
-			rtn.writeByte(0x5D); // ]
-		}
-		private function encodeVecN(a:Vector.<Number>, rtn:ByteArray, enc:Vector.<int>, map:Dictionary):void {
-			var e:int = a.length - 1, i:int;
-			rtn.writeByte(0x5B); // [
-			if (e >= 0) {
-				while (i < e) {
-					rtn.writeUTFBytes(String(a[i]));
-					rtn.writeByte(0x2C); // ,
-					++i;
-				}
-				rtn.writeUTFBytes(String(a[i]));
-			}
-			rtn.writeByte(0x5D); // ]
-		}
-		private function encodeVecU(a:Vector.<uint>, rtn:ByteArray, enc:Vector.<int>, map:Dictionary):void {
-			var e:int = a.length - 1, i:int;
-			rtn.writeByte(0x5B); // [
-			if (e >= 0) {
-				while (i < e) {
-					rtn.writeUTFBytes(String(a[i]));
-					rtn.writeByte(0x2C); // ,
-					++i;
-				}
-				rtn.writeUTFBytes(String(a[i]));
-			}
-			rtn.writeByte(0x5D); // ]
-		}
-		private function encodeVecI(a:Vector.<int>, rtn:ByteArray, enc:Vector.<int>, map:Dictionary):void {
-			var e:int = a.length - 1, i:int;
-			rtn.writeByte(0x5B); // [
-			if (e >= 0) {
-				while (i < e) {
-					rtn.writeUTFBytes(String(a[i]));
-					rtn.writeByte(0x2C); // ,
-					++i;
-				}
-				rtn.writeUTFBytes(String(a[i]));
-			}
-			rtn.writeByte(0x5D); // ]
-		}
-		private function encodeVecB(a:Vector.<Boolean>, rtn:ByteArray, enc:Vector.<int>):void {
-			var e:int = a.length - 1, i:int;
-			rtn.writeByte(0x5B); // [
-			if (e >= 0) {
-				while (i < e) {
-					if (a[i]) { // Boolean vectors can technically contain null (last test: FP11.1) due to poor Adobe coding. no special cases for it here, though.
-						rtn.writeInt(0x74727565); // true
-						rtn.writeByte(0x2C); // ,
-					} else {
-						rtn.writeShort(0x6661); // fa
-						rtn.writeInt(0x6C73652C); // lse,
-					}
-					++i;
-				}
-				rtn.writeUTFBytes(String(a[i]));
-			}
-			rtn.writeByte(0x5D); // ]
-		}
-		private function encodeVecS(a:Vector.<String>, rtn:ByteArray, enc:Vector.<int>):void {
-			var e:int = a.length - 1, i:int, b:String;
-			rtn.writeByte(0x5B); // [
-			if (e >= 0) {
-				while (i < e) {
-					b = a[i] as String;
-					if (b !== null) encodeString(String(a[i] as String), rtn, enc);
-					else rtn.writeInt(0x6E756C6C);
-					rtn.writeByte(0x2C);
-					++i;
-				}
-				b = a[i];
-				if (b !== null) encodeString(String(a[i] as String), rtn, enc);
-				else rtn.writeInt(0x6E756C6C);
-			}
-			rtn.writeByte(0x5D); // ]
-		}
-		private function encodeBool(a:Boolean, rtn:ByteArray, enc:Vector.<int>, map:Dictionary):void {
-			if (a) {
-				rtn.writeInt(0x74727565); // true
-				return;
-			}
-			rtn.writeByte(0x66); // f
-			rtn.writeInt(0x616C7365); // alse
-		}
-		private function encodeDate(a:Date, rtn:ByteArray, enc:Vector.<int>, map:Dictionary):void {
-			rtn.writeUTFBytes(String(a.getTime()));
-		}
-		private function encodeDict(dic:Dictionary, rtn:ByteArray, enc:Vector.<int>, map:Dictionary):void {
-			var e:Object, f:Function, map:Dictionary = encMap;
-			rtn.writeByte(0x7B); // {
-			for (var b:* in dic) {
-				if (b is String) {e = dic[b];
-					encodeString(b, rtn, enc, null, true);
-					f = map[typeof e];
-					f(e, rtn, enc, map);
-					rtn.writeByte(0x2C);
-				} else if (b is Number) {e = dic[b];
-					encodeString(String(b), rtn, enc, null, true);
-					f = map[typeof e];
-					f(e, rtn, enc, map);
-					rtn.writeByte(0x2C);
-				} else if (b is Date) {e = dic[b];
-					encodeString(String((b as Date).getTime()), rtn, enc, null, true);
-					f = map[typeof e];
-					f(e, rtn, enc, map);
-					rtn.writeByte(0x2C);
-				} else if (b is XML) {e = dic[b];
-					encodeString((b as XML).toXMLString(), rtn, enc, null, true);
-					f = map[typeof e];
-					f(e, rtn, enc, map);
-					rtn.writeByte(0x2C);
-				} else if (b is XMLList) {e = dic[b];
-					encodeString((b as XMLList).toXMLString(), rtn, enc, null, true);
-					f = map[typeof e];
-					f(e, rtn, enc, map);
-					rtn.writeByte(0x2C);
-				} else if (b is Boolean) {e = dic[b];
-					encodeString(String(b), rtn, enc, null, true);
-					f = map[typeof e];
-					f(e, rtn, enc, map);
-					rtn.writeByte(0x2C);
-				}
-			}
-			if (b !== undefined) rtn.position--;
-			rtn.writeByte(0x7D); // }
-		}
-		private function encodeObject(a:Object, rtn:ByteArray, enc:Vector.<int>, map:Dictionary):void {
-			if (!a) {
-				rtn.writeInt(0x6E756C6C);
-				return;
-			}
-			if ("toJSON" in a) if (a.toJSON is Function) {
-				c = tryToJSON(a);
-				if (c !== null) {
-					rtn.writeUTFBytes(c);
-					return;
-				}
-			}
-			rtn.writeByte(0x7B); // {
-			var c:String, e:Object, f:Function;
-			for (c in a) {
-				encodeString(c, rtn, enc, null, true);
-				e = a[c];
-				f = map[typeof e];
-				f(e, rtn, enc, map);
-				rtn.writeByte(0x2C);
-			}
-			if (c !== null) rtn.position--;
-			rtn.writeByte(0x7D); // }
-		}
-		private function encodeObj2(a:Object, rtn:ByteArray, enc:Vector.<int>, map:Dictionary):void {
-			if (!a) {
-				rtn.writeInt(0x6E756C6C);
-				return;
-			}
-			var f:Function = map[a.constructor];
-			if (Boolean(f)) {
-				f(a, rtn, enc, map);
-				return;
-			}
-			encodeObject(a, rtn, enc, map);
-		}
-		private function encodeXML(a:XML, rtn:ByteArray, enc:Vector.<int>, map:Dictionary):void {
-			encodeString(a.toXMLString(), rtn, enc);
-		}
-		private function encodeXMLL(a:XMLList, rtn:ByteArray, enc:Vector.<int>, map:Dictionary):void {
-			encodeString(a.toXMLString(), rtn, enc);
-		}
-		private function encodeNumber(e:Number, rtn:ByteArray, enc:Vector.<int>, map:Dictionary):void {
-			if ((e * 0) !== 0) {
-				rtn.writeByte(0x30);
-				return;
-			}
-			rtn.writeUTFBytes(String(e));
-		}
-		private function encodeString(data:String, rtn:ByteArray, enc:Vector.<int>, map:Dictionary = null, colon:Boolean = false):void {
-			var c:int, i:int;
-			var e:int = data.length, t:int;
-			rtn.writeByte(0x22); // "
-			while (i < e) {
-				c = data.charCodeAt(i++);
-				if (int(c < 0x20) | int(c > 0x7E)) { // ' ' | '~'
-					t = int(c <= 0xFFFF);
-					t *= 0xFFFF;
-					rtn.writeShort(0x5C75); // \u
-					rtn.writeInt(enc[c & t]);
-					continue;
-				} else if (int(c == 0x22) | int(c == 0x5C)) { // " | \ 
-					rtn.writeByte(0x5C); // \ 
-				}
-				rtn.writeByte(c);
-			}
-			rtn.writeByte(0x22); // "
-			if (colon) rtn.writeByte(0x3A); // :
-			// ^ unavoidable
-		}
-		
-		private function min(a:Number, b:Number):Number {
-			var c:int = int(a < b);
-			return (c * a) + ((1 - c) * b); // fast a < b ? a : b;
-		}
+		//{ TYPES
 		private function handleString(data:String, e:int, c:int, end:int):String { // additional arguments to provide speed boosts
 			var a:int = i+1; // passed in 'c' is first character of string. 'end' is teminator (" or ')
 			if (c == end) { // fastpath: empty string
@@ -433,7 +451,7 @@ package skyboy.serialization {
 			}
 			var p:int = containsSlash, p1:int, p2:int, temp:String = '"';
 			if (end === 0x27) temp = "'";
-			if (p & int(a > p)) p = data.indexOf('\\', a) + 1, containsSlash = p;
+			if (int(Boolean(p)) & int(a > p)) p = data.indexOf('\\', a) + 1, containsSlash = p;
 			p1 = data.indexOf(temp, a);
 			if ((int(!p) | int(p > p1)) & int(Boolean(p1 + 1))) {
 				i = p1;
@@ -463,13 +481,22 @@ package skyboy.serialization {
 							error(data, a - 6, "Expected 0-F after \\u", 6);
 						}
 						rtn.position = inx;
-						// 0xE00000 | ((i & 0xF000) << 4) | 0x8000 | ((i & 0xFC0) << 2) | 0x80 | (i & 0x3F)
-						p1 = (p1 << two) | (p2 >> two);
+						// 0xE08080 | ((i & 0xF000) << 4) | ((i & 0xFC0) << 2) | (i & 0x3F)
+						/*p1 = (p1 << two) | (p2 >> two);
 						p = ((p2 << two) | p) & 0x3F;
-						rtn.writeInt((0xE0 | t) | ((0x80 | p1) << 8) | ((0x80 | p) << 16));
-						inx += 3;
-						c = data.charCodeAt(++a);
-						continue;
+						rtn.writeInt(((0xE0 | t) << 24) | ((0x80 | p1) << 16) | ((0x80 | p) << 8));
+						//*/
+						if (!(p1 | (t | (p2 & 8)))) {
+							++inx, rtn.writeByte(p|(p2<<4));
+							c = data.charCodeAt(++a);
+							continue;
+						} else {
+							p |= (p2 << 4) | (p1 << 8);
+							rtn.writeInt((0xE08080 | (t << 16) | ((p & 0xFC0) << 2) | (p & 0x3F)) << 8);
+							inx += 3;
+							c = data.charCodeAt(++a);
+							continue;
+						}
 					} else if (c === x) {
 						t = data.charCodeAt(++a) - 0x30;
 						t -= (seven & -int(t > nine)) | (space & -int(t > tt));
@@ -480,7 +507,7 @@ package skyboy.serialization {
 						}
 						c = (t << 4) | p;
 						rtn.position = inx;
-						rtn.writeShort((0xC0 | ((c >> 6) & 0x1F)) | ((0x80 | (c & 0x3F)) << 8));
+						rtn.writeShort(((0xC0 | ((c >> 6) & 0x1F)) << 8) | (0x80 | (c & 0x3F)));
 						++inx;
 						++inx;
 						c = data.charCodeAt(++a);
@@ -539,7 +566,7 @@ package skyboy.serialization {
 					rtn.position = 0;
 					return rtn.readUTFBytes(inx);
 				}
-				c = (0xF0 | ((c & 0x1C0000) >> 18)) | (0x8000 | ((c & 0x3F000) >> 4)) | 0x800000 | ((c & 0xFC0) << 10) | ((0x80 | (c & 0x3F)) << 16);
+				c = 0xF0000000 | ((c & 0x1C0000) << 6) | 0x800000 | ((c & 0x3F000) << 4) | 0x8000 | ((c & 0xFC0) << 2) | 0x80 | (c & 0x3F);
 				rtn.writeInt(c);
 			}
 			error(data, i, "Unterminated String.", 1);
@@ -610,7 +637,9 @@ package skyboy.serialization {
 			if ((int(c > 0x2F) & int(c < 0x3A))) {
 				r = c - 0x30;
 				while (int((c = int(data.charCodeAt(++a))) > 0x2F) & int(c < 0x3A)) {
-					r = (r * 10) + (c - 0x30);
+					c -= 0x30;
+					r *= 10;
+					r += c;
 					// TODO: largest represtnable number in Number is over 18 digits; can't use int here, performance pentalty for extremely large values\
 					// but beyond 52 bits of precision, Number loses accuracy. @parseFloat()@/@Number()@ may limit to 53 bits in a long. investigate.
 				}
@@ -622,7 +651,9 @@ package skyboy.serialization {
 			var t:int = 1, ex:int, exn:int, d:Number = 10;
 			if (c === 0x2E) {
 				while (int((c = int(data.charCodeAt(++a))) > 0x2F) & int(c < 0x3A)) {
-					r += (c - 0x30) / (t *= 10); // i don't think i can improve this.
+					c -= 0x30;
+					t *= 10;
+					r += c / t;
 				}
 				if (int(c === 0x20) | int(c === 0x09) | int(c === 10) | int(c === 13) | int(c === 0x2C) | int((c | 0x20) === 0x7D)) {
 					i = a - 1;
@@ -726,20 +757,22 @@ package skyboy.serialization {
 				error(data, i, "Expected 'null'", 3);
 			}
 		}
-		private function handleArray(data:String, e:int, c:int, ...rtn):Array { // implicit allocation of return array. much faster
+		private function handleArray(data:String, e:int, c:int):Array {
 			var a:int = i + 1;
 			if (c === 0x5D) {
 				i = a;
-				return rtn;
+				return []; // short circuit
 			}
-			var inx:int, p:Boolean = true;
+			var inx:int, p:Boolean = true, rtn:Array = [0];
 			while (a < e) {
-				while ((int(c == 0x20) | int(c == 0x09) | int(c == 10) | int(c == 13))) {
+				while ((int(c === 0x20) | int(c === 0x09) | int(c === 10) | int(c === 13))) {
 					c = data.charCodeAt(++a);
 				}
 				if (c === 0x5D) {
-					if (p) error(data, a, "Expected value.", 1);
-					rtn.length = inx;
+					c = int(p);
+					if (c & int(Boolean(inx))) error(data, a, "Expected value.", 1);
+					c = 1 - c;
+					rtn.length = inx + c;
 					i = a;
 					return rtn;
 				} else if (p) {
@@ -760,7 +793,7 @@ package skyboy.serialization {
 					} else if ((int(c === 0x74) | int(c === 0x66) | int(c === 0x6E))) {
 						rtn[inx] = handleLit(data, e, a);
 						a = i;
-					} else error(data, a, "Expected value.", 1); // by having nothing after this, the jumps out of the above tree all result at the top of the loop.
+					} else error(data, a, "Expected value.", 1);
 				} else if ((inx += int(p = (c === 0x2C)),p)) void;
 				else error(data, a, "Expected , or ]");
 				c = data.charCodeAt(++a);
@@ -769,18 +802,19 @@ package skyboy.serialization {
 			return null; // not reached
 		}
 		private function handleObject(data:String, e:int):Object {
-			var c:int, a:int = i, rtn:Object = new Object, inx:String, p:Boolean = true;
+			var c:int, a:int = i, rtn:Object = new Object;
 			c = data.charCodeAt(++a);
 			if (c === 0x7D) {
 				i = a;
 				return rtn;
 			}
+			var p:Boolean = true;
 			while (a < e) {
 				while ((int(c == 0x20) | int(c == 0x09) | int(c == 10) | int(c == 13))) {
 					c = data.charCodeAt(++a);
 				}
 				if (c === 0x7D) {
-					if (p) error(data, a, "Expected value.", 1)
+					if (int(p) & int(Boolean(inx))) error(data, a, "Expected value.", 1)
 					i = a;
 					return rtn;
 				} else if (p) {
@@ -812,15 +846,16 @@ package skyboy.serialization {
 							} else if ((int(c === 0x74) | int(c === 0x66) | int(c === 0x6E))) {
 								rtn[inx] = handleLit(data, e, a);
 								a = i;
-							} else error(data, a, "Expected value.", 1); // values arranged in an attempt to get best performance
+							} else error(data, a, "Expected value.", 1);
 						} else error(data, a, "Expected :");
-					} else error(data, a, "Expected \" or '"); // rearranging this saves one jump for every object property.
+					} else error(data, a, "Expected \" or '");
 				} else if ((p = (c === 0x2C))) void;
 				else error(data, a, "Expected , or }");
 				c = data.charCodeAt(++a);
 			}
 			error(data, a, "Unterminated Object.", 1);
-			return null; // not reached
+			return null;// not reached
+			var inx:String;
 		}
 		private function error(data:String, i:int, e:String = null, l:int = 0):void {
 			if (l) {
@@ -833,5 +868,138 @@ package skyboy.serialization {
 				throw new Error("Malformed JSON at char: " + i + ", '" + data.charAt(i) + (e ? "'. " + e : "'."), errorID);
 			}
 		}
+		//}
+		//}
 	}
 }
+//{
+import flash.utils.ByteArray;
+import flash.utils.Dictionary;
+import skyboy.serialization.JSON;
+internal namespace sky = "skyboy/serialization/JSON";
+internal interface F {
+	function f(data:*, rtn:ByteArray, enc:Vector.<int>, map:Dictionary):void;
+}
+internal class E implements F {
+	protected var j:skyboy.serialization.JSON;
+	public function E($j:skyboy.serialization.JSON):void {
+		j = $j;
+	}
+	public function f(data:*, rtn:ByteArray, enc:Vector.<int>, map:Dictionary):void {
+		
+	}
+}
+internal class eA extends E {
+	public function eA(j:skyboy.serialization.JSON):void {
+		super(j);
+	}
+	public override function f(data:*, rtn:ByteArray, enc:Vector.<int>, map:Dictionary):void {
+		j.sky::encodeArry(data, rtn, enc, map);
+	}
+}
+internal class eVO extends E {
+	public function eVO(j:skyboy.serialization.JSON):void {
+		super(j);
+	}
+	public override function f(data:*, rtn:ByteArray, enc:Vector.<int>, map:Dictionary):void {
+		j.sky::encodeVecO(data, rtn, enc, map);
+	}
+}
+internal class eVN extends E {
+	public function eVN(j:skyboy.serialization.JSON):void {
+		super(j);
+	}
+	public override function f(data:*, rtn:ByteArray, enc:Vector.<int>, map:Dictionary):void {
+		j.sky::encodeVecN(data, rtn);
+	}
+}
+internal class eVU extends E {
+	public function eVU(j:skyboy.serialization.JSON):void {
+		super(j);
+	}
+	public override function f(data:*, rtn:ByteArray, enc:Vector.<int>, map:Dictionary):void {
+		j.sky::encodeVecU(data, rtn);
+	}
+}
+internal class eVI extends E {
+	public function eVI(j:skyboy.serialization.JSON):void {
+		super(j);
+	}
+	public override function f(data:*, rtn:ByteArray, enc:Vector.<int>, map:Dictionary):void {
+		j.sky::encodeVecI(data, rtn);
+	}
+}
+internal class eB extends E {
+	public function eB(j:skyboy.serialization.JSON):void {
+		super(j);
+	}
+	public override function f(data:*, rtn:ByteArray, enc:Vector.<int>, map:Dictionary):void {
+		j.sky::encodeBool(data, rtn, enc, map);
+	}
+}
+internal class eDT extends E {
+	public function eDT(j:skyboy.serialization.JSON):void {
+		super(j);
+	}
+	public override function f(data:*, rtn:ByteArray, enc:Vector.<int>, map:Dictionary):void {
+		j.sky::encodeDate(data, rtn, enc, map);
+	}
+}
+internal class eD extends E {
+	public function eD(j:skyboy.serialization.JSON):void {
+		super(j);
+	}
+	public override function f(data:*, rtn:ByteArray, enc:Vector.<int>, map:Dictionary):void {
+		j.sky::encodeDict(data, rtn, enc, map);
+	}
+}
+internal class eO extends E {
+	public function eO(j:skyboy.serialization.JSON):void {
+		super(j);
+	}
+	public override function f(data:*, rtn:ByteArray, enc:Vector.<int>, map:Dictionary):void {
+		j.sky::encodeObject(data, rtn, enc, map);
+	}
+}
+internal class eO2 extends E {
+	public function eO2(j:skyboy.serialization.JSON):void {
+		super(j);
+	}
+	public override function f(data:*, rtn:ByteArray, enc:Vector.<int>, map:Dictionary):void {
+		j.sky::encodeObj2(data, rtn, enc, map);
+	}
+}
+internal class eX extends E {
+	public function eX(j:skyboy.serialization.JSON):void {
+		super(j);
+	}
+	public override function f(data:*, rtn:ByteArray, enc:Vector.<int>, map:Dictionary):void {
+		j.sky::encodeXML(data, rtn, enc, map);
+	}
+}
+internal class eXL extends E {
+	public function eXL(j:skyboy.serialization.JSON):void {
+		super(j);
+	}
+	public override function f(data:*, rtn:ByteArray, enc:Vector.<int>, map:Dictionary):void {
+		j.sky::encodeXMLL(data, rtn, enc, map);
+	}
+}
+internal class eN extends E {
+	public function eN(j:skyboy.serialization.JSON):void {
+		super(j);
+	}
+	public override function f(data:*, rtn:ByteArray, enc:Vector.<int>, map:Dictionary):void {
+		j.sky::encodeNumber(data, rtn);
+	}
+}
+internal class eS extends E {
+	public function eS(j:skyboy.serialization.JSON):void {
+		super(j);
+	}
+	public override function f(data:*, rtn:ByteArray, enc:Vector.<int>, map:Dictionary):void {
+		j.sky::encodeString(data, rtn, enc);
+	}
+}
+new skyboy.serialization.JSON();
+//}
