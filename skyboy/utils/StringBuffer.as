@@ -66,72 +66,99 @@ package skyboy.utils {
 			if (str) buffer.writeUTFBytes(str);
 		}
 		//{ APPEND
-		public function appendByteArray(a:ByteArray, start:uint = 0, len:uint = 0):void {
+		public function appendByteArray(a:ByteArray, start:uint = 0, len:uint = 0):StringBuffer {
 			var end:uint = start + len;
 			var e:uint = a.length;
 			if (end > e) end = e;
-			if (start >= end) return;
+			if (start >= end) return this;
 			buffer.writeBytes(a, start, end - start);
+			return this;
 		}
-		public function appendChar(a:int):void {
+		public function appendChar(a:int):StringBuffer {
 			buffer.writeByte(a);
+			return this;
 		}
-		public function appendChars(...a):void {
+		public function appendChars(...a):StringBuffer {
+			var buffer:ByteArray = this.buffer;
 			for each(var b:* in a)
 				buffer.writeByte(int(b));
+			return this;
 		}
-		public function appendCharArray(a:Array):void {
+		public function appendCharArray(a:Array):StringBuffer {
+			var buffer:ByteArray = this.buffer;
 			for each(var b:* in a)
 				buffer.writeByte(int(b));
+			return this;
 		}
-		public function appendCharVectorI(a:Vector.<int>):void {
+		public function appendCharVectorI(a:Vector.<int>):StringBuffer {
+			var buffer:ByteArray = this.buffer;
 			for each(var b:int in a)
 				buffer.writeByte(b);
+			return this;
 		}
-		public function appendCharVectorU(a:Vector.<uint>):void {
+		public function appendCharVectorU(a:Vector.<uint>):StringBuffer {
+			var buffer:ByteArray = this.buffer;
 			for each(var b:uint in a)
 				buffer.writeByte(b);
+			return this;
 		}
-		public function appendInt(a:int):void {
+		public function appendInt(a:int):StringBuffer {
 			buffer.writeInt(a);
+			return this;
 		}
-		public function appendInts(...a):void {
+		public function appendInts(...a):StringBuffer {
+			var buffer:ByteArray = this.buffer;
 			for each(var b:* in a)
 				buffer.writeInt(int(b));
+			return this;
 		}
-		public function appendIntArray(a:Array):void {
+		public function appendIntArray(a:Array):StringBuffer {
+			var buffer:ByteArray = this.buffer;
 			for each(var b:* in a)
 				buffer.writeInt(int(b));
+			return this;
 		}
-		public function appendIntVector(a:Vector.<int>):void {
+		public function appendIntVector(a:Vector.<int>):StringBuffer {
+			var buffer:ByteArray = this.buffer;
 			for each(var b:int in a)
 				buffer.writeInt(b);
+			return this;
 		}
-		public function appendString(a:*):void {
+		public function appendString(a:*):StringBuffer {
 			buffer.writeUTFBytes(String(a));
+			return this;
 		}
-		public function appendStrings(...a):void {
+		public function appendStrings(...a):StringBuffer {
+			var buffer:ByteArray = this.buffer;
 			for each(var b:* in a)
 				buffer.writeUTFBytes(String(b));
+			return this;
 		}
-		public function appendStringArray(a:Array):void {
+		public function appendStringArray(a:Array):StringBuffer {
+			var buffer:ByteArray = this.buffer;
 			for each(var b:* in a)
 				buffer.writeUTFBytes(String(b));
+			return this;
 		}
-		public function appendStringBuffer(a:StringBuffer, start:uint = 0, len:uint = 0):void {
+		public function appendStringBuffer(a:StringBuffer, start:uint = 0, len:uint = 0):StringBuffer {
 			var b:ByteArray = a.buffer, e:uint = b.length;
 			var end:uint = start + len;
 			if (end > e) end = e;
-			if (start >= end) return;
+			if (start >= end) return this;
 			buffer.writeBytes(b, start, end - start);
+			return this;
 		}
-		public function appendStringVector(a:Vector.<String>):void {
+		public function appendStringVector(a:Vector.<String>):StringBuffer {
+			var buffer:ByteArray = this.buffer;
 			for each(var b:String in a)
 				buffer.writeUTFBytes(String(b));
+			return this;
 		}
-		public function appendUintVector(a:Vector.<uint>):void {
+		public function appendUintVector(a:Vector.<uint>):StringBuffer {
+			var buffer:ByteArray = this.buffer;
 			for each(var b:uint in a)
 				buffer.writeInt(b);
+			return this;
 		}
 		//} APPEND
 		public function byteAt(i:uint):int {
@@ -183,6 +210,9 @@ package skyboy.utils {
 			a.writeBytes(a, i + len, l - i);
 			a.position = p - len;
 		}
+		public function empty():Boolean {
+			return !buffer.position;
+		}
 		public function getBytesAt(start:uint, end:uint, dst:ByteArray = null, dstStart:uint = 0):ByteArray {
 			if (!dst) dst = new ByteArray;
 			if (dstStart < dst.length) dstStart = dst.length;
@@ -190,10 +220,11 @@ package skyboy.utils {
 			return dst;
 		}
 		//{ INSERT
-		public function insertByteArray(offset:uint, a:ByteArray, start:int = 0, end:int = 0):void {
+		public function insertByteArray(offset:uint, a:ByteArray, start:int = 0, end:int = 0):StringBuffer {
+			var buffer:ByteArray = this.buffer;
 			if (offset > length) {
 				appendByteArray(a, start, end);
-				return;
+				return this;
 			}
 			var tem:uint = buffer.position;
 			if (offset < buffer.position) buffer.position = offset;
@@ -201,14 +232,16 @@ package skyboy.utils {
 			backBuffer.writeBytes(buffer, offset, 0);
 			var e:uint = a.length;
 			if (end > e) end = e;
-			if (start > end) return;
+			if (start > end) return this;
 			buffer.writeBytes(a, start, end);
 			buffer.writeBytes(backBuffer, 0, backBuffer.length);
+			return this;
 		}
-		public function insertChar(offset:uint, a:int):void {
+		public function insertChar(offset:uint, a:int):StringBuffer {
+			var buffer:ByteArray = this.buffer;
 			if (offset > length) {
 				appendChar(a);
-				return;
+				return this;
 			}
 			var tem:uint = buffer.position;
 			if (offset < buffer.position) buffer.position = offset;
@@ -216,11 +249,13 @@ package skyboy.utils {
 			backBuffer.writeBytes(buffer, offset, 0);
 			buffer.writeByte(a);
 			buffer.writeBytes(backBuffer, 0, backBuffer.length);
+			return this;
 		}
-		public function insertChars(offset:uint, ...a):void {
+		public function insertChars(offset:uint, ...a):StringBuffer {
+			var buffer:ByteArray = this.buffer;
 			if (offset > length) {
 				appendCharArray(a);
-				return;
+				return this;
 			}
 			var tem:uint = buffer.position;
 			if (offset < buffer.position) buffer.position = offset;
@@ -229,11 +264,13 @@ package skyboy.utils {
 			for each(var b:* in a)
 				buffer.writeByte(int(b));
 			buffer.writeBytes(backBuffer, 0, backBuffer.length);
+			return this;
 		}
-		public function insertCharArray(offset:uint, a:Array):void {
+		public function insertCharArray(offset:uint, a:Array):StringBuffer {
+			var buffer:ByteArray = this.buffer;
 			if (offset > length) {
 				appendCharArray(a);
-				return;
+				return this;
 			}
 			var tem:uint = buffer.position;
 			if (offset < buffer.position) buffer.position = offset;
@@ -242,11 +279,13 @@ package skyboy.utils {
 			for each(var b:* in a)
 				buffer.writeByte(int(b));
 			buffer.writeBytes(backBuffer, 0, backBuffer.length);
+			return this;
 		}
-		public function insertCharVectorI(offset:uint, a:Vector.<int>):void {
+		public function insertCharVectorI(offset:uint, a:Vector.<int>):StringBuffer {
+			var buffer:ByteArray = this.buffer;
 			if (offset > length) {
 				appendCharVectorI(a);
-				return;
+				return this;
 			}
 			var tem:uint = buffer.position;
 			if (offset < buffer.position) buffer.position = offset;
@@ -255,11 +294,13 @@ package skyboy.utils {
 			for each(var b:int in a)
 				buffer.writeByte(b);
 			buffer.writeBytes(backBuffer, 0, backBuffer.length);
+			return this;
 		}
-		public function insertCharVectorU(offset:uint, a:Vector.<uint>):void {
+		public function insertCharVectorU(offset:uint, a:Vector.<uint>):StringBuffer {
+			var buffer:ByteArray = this.buffer;
 			if (offset > length) {
 				appendCharVectorU(a);
-				return;
+				return this;
 			}
 			var tem:uint = buffer.position;
 			if (offset < buffer.position) buffer.position = offset;
@@ -268,11 +309,13 @@ package skyboy.utils {
 			for each(var b:uint in a)
 				buffer.writeByte(b);
 			buffer.writeBytes(backBuffer, 0, backBuffer.length);
+			return this;
 		}
-		public function insertInt(offset:uint, a:int):void {
+		public function insertInt(offset:uint, a:int):StringBuffer {
+			var buffer:ByteArray = this.buffer;
 			if (offset > length) {
 				appendInt(a);
-				return;
+				return this;
 			}
 			var tem:uint = buffer.position;
 			if (offset < buffer.position) buffer.position = offset;
@@ -280,11 +323,13 @@ package skyboy.utils {
 			backBuffer.writeBytes(buffer, offset, 0);
 			buffer.writeInt(a);
 			buffer.writeBytes(backBuffer, 0, backBuffer.length);
+			return this;
 		}
-		public function insertInts(offset:uint, ...a):void {
+		public function insertInts(offset:uint, ...a):StringBuffer {
+			var buffer:ByteArray = this.buffer;
 			if (offset > length) {
 				appendIntArray(a);
-				return;
+				return this;
 			}
 			var tem:uint = buffer.position;
 			if (offset < buffer.position) buffer.position = offset;
@@ -293,11 +338,13 @@ package skyboy.utils {
 			for each(var b:* in a)
 				buffer.writeInt(int(b));
 			buffer.writeBytes(backBuffer, 0, backBuffer.length);
+			return this;
 		}
-		public function insertIntArray(offset:uint, a:Array):void {
+		public function insertIntArray(offset:uint, a:Array):StringBuffer {
+			var buffer:ByteArray = this.buffer;
 			if (offset > length) {
 				appendIntArray(a);
-				return;
+				return this;
 			}
 			var tem:uint = buffer.position;
 			if (offset < buffer.position) buffer.position = offset;
@@ -306,11 +353,13 @@ package skyboy.utils {
 			for each(var b:* in a)
 				buffer.writeInt(int(b));
 			buffer.writeBytes(backBuffer, 0, backBuffer.length);
+			return this;
 		}
-		public function insertIntVector(offset:uint, a:Vector.<int>):void {
+		public function insertIntVector(offset:uint, a:Vector.<int>):StringBuffer {
+			var buffer:ByteArray = this.buffer;
 			if (offset > length) {
 				appendIntVector(a);
-				return;
+				return this;
 			}
 			var tem:uint = buffer.position;
 			if (offset < buffer.position) buffer.position = offset;
@@ -319,11 +368,13 @@ package skyboy.utils {
 			for each(var b:int in a)
 				buffer.writeInt(b);
 			buffer.writeBytes(backBuffer, 0, backBuffer.length);
+			return this;
 		}
-		public function insertString(offset:uint, a:*):void {
+		public function insertString(offset:uint, a:*):StringBuffer {
+			var buffer:ByteArray = this.buffer;
 			if (offset > length) {
 				appendString(a);
-				return;
+				return this;
 			}
 			var tem:uint = buffer.position;
 			if (offset < buffer.position) buffer.position = offset;
@@ -331,11 +382,13 @@ package skyboy.utils {
 			backBuffer.writeBytes(buffer, offset, 0);
 			buffer.writeUTFBytes(String(a));
 			buffer.writeBytes(backBuffer, 0, backBuffer.length);
+			return this;
 		}
-		public function insertStrings(offset:uint, ...a):void {
+		public function insertStrings(offset:uint, ...a):StringBuffer {
+			var buffer:ByteArray = this.buffer;
 			if (offset > length) {
 				appendStringArray(a);
-				return;
+				return this;
 			}
 			var tem:uint = buffer.position;
 			if (offset < buffer.position) buffer.position = offset;
@@ -344,11 +397,13 @@ package skyboy.utils {
 			for each(var b:* in a)
 				buffer.writeUTFBytes(String(b));
 			buffer.writeBytes(backBuffer, 0, backBuffer.length);
+			return this;
 		}
-		public function insertStringArray(offset:uint, a:Array):void {
+		public function insertStringArray(offset:uint, a:Array):StringBuffer {
+			var buffer:ByteArray = this.buffer;
 			if (offset > length) {
 				appendStringArray(a);
-				return;
+				return this;
 			}
 			var tem:uint = buffer.position;
 			if (offset < buffer.position) buffer.position = offset;
@@ -357,11 +412,13 @@ package skyboy.utils {
 			for each(var b:* in a)
 				buffer.writeUTFBytes(String(b));
 			buffer.writeBytes(backBuffer, 0, backBuffer.length);
+			return this;
 		}
-		public function insertStringBuffer(offset:uint, a:StringBuffer, start:int = 0, end:int = 0):void {
+		public function insertStringBuffer(offset:uint, a:StringBuffer, start:int = 0, end:int = 0):StringBuffer {
+			var buffer:ByteArray = this.buffer;
 			if (offset > length) {
 				appendStringBuffer(a, start, end);
-				return;
+				return this;
 			}
 			var tem:uint = buffer.position;
 			if (offset < buffer.position) buffer.position = offset;
@@ -369,14 +426,16 @@ package skyboy.utils {
 			backBuffer.writeBytes(buffer, offset, 0);
 			var b:ByteArray = a.buffer, e:uint = b.length;
 			if (end > e) end = e;
-			if (start > end) return;
+			if (start > end) return this;
 			buffer.writeBytes(b, start, end);
 			buffer.writeBytes(backBuffer, 0, backBuffer.length);
+			return this;
 		}
-		public function insertStringVector(offset:uint, a:Vector.<String>):void {
+		public function insertStringVector(offset:uint, a:Vector.<String>):StringBuffer {
+			var buffer:ByteArray = this.buffer;
 			if (offset > length) {
 				appendStringVector(a);
-				return;
+				return this;
 			}
 			var tem:uint = buffer.position;
 			if (offset < buffer.position) buffer.position = offset;
@@ -385,11 +444,13 @@ package skyboy.utils {
 			for each(var b:String in a)
 				buffer.writeUTFBytes(String(b));
 			buffer.writeBytes(backBuffer, 0, backBuffer.length);
+			return this;
 		}
-		public function insertUintVector(offset:uint, a:Vector.<uint>):void {
+		public function insertUintVector(offset:uint, a:Vector.<uint>):StringBuffer {
+			var buffer:ByteArray = this.buffer;
 			if (offset > length) {
 				appendUintVector(a);
-				return;
+				return this;
 			}
 			var tem:uint = buffer.position;
 			if (offset < buffer.position) buffer.position = offset;
@@ -398,6 +459,7 @@ package skyboy.utils {
 			for each(var b:uint in a)
 				buffer.writeInt(b);
 			buffer.writeBytes(backBuffer, 0, backBuffer.length);
+			return this;
 		}
 		//} INSERT
 		public function indexOf(str:String, start:uint = 0):Number {
@@ -463,16 +525,19 @@ package skyboy.utils {
 			buffer.length = l;
 			if (l < buffer.position) buffer.position = l;
 		}
-		public function replace(start:uint, str:String):void {
+		//{ REPLACE
+		public function replace(start:uint, str:String):StringBuffer {
 			var i:uint = buffer.position;
 			buffer.position = start;
 			buffer.writeUTFBytes(String(str));
 			if (buffer.position < i) buffer.position = i;
+			return this;
 		}
-		public function replaceBytes(start:uint, end:uint, bytes:ByteArray, bytesStart:uint = 0):void {
+		public function replaceBytes(start:uint, end:uint, bytes:ByteArray, bytesStart:uint = 0):StringBuffer {
 			var a:ByteArray = buffer, i:uint = bytesStart, e:uint = bytes.length;
 			if (end > a.length) end = a.length;
 			while (int(start < end) & int(i < e)) a[start++] = bytes[i++];
+			return this;
 		}
 		public function replaceChar(char:int, replace:int):uint {
 			var a:ByteArray = buffer, i:uint, e:uint = buffer.length, c:int;
@@ -482,54 +547,67 @@ package skyboy.utils {
 			}
 			return c;
 		}
-		public function replaceFirstChar(char:int, replace:int):void {
+		public function replaceCharVoid(char:int, replace:int):StringBuffer {
+			var a:ByteArray = buffer, i:uint, e:uint = buffer.length;
+			while (i < e) {
+				if (a[i] == char) a[i] = replace;
+				++i;
+			}
+			return this;
+		}
+		public function replaceFirstChar(char:int, replace:int):StringBuffer {
 			var a:ByteArray = buffer, i:uint, e:uint = buffer.length;
 			while (i < e) {
 				if (a[i] == char) {
 					a[i] = replace;
-					return;
+					return this;
 				}
 				++i;
 			}
+			return this;
 		}
-		public function replaceLastChar(char:int, replace:int):void {
+		public function replaceLastChar(char:int, replace:int):StringBuffer {
 			var a:ByteArray = buffer, e:uint = buffer.length;
 			while (e--) {
 				if (a[e] == char) {
 					a[e] = replace;
-					return;
+					return this;
 				}
 			}
+			return this;
 		}
-		public function replaceNthChar(char:int, replace:int, n:uint):void {
+		public function replaceNthChar(char:int, replace:int, n:uint):StringBuffer {
 			var a:ByteArray = buffer, i:uint, e:uint = buffer.length, c:uint;
 			while (i < e) {
 				if (a[i] == char) {
 					if (c++ == n) {
 						a[i] = replace;
-						return;
+						return this;
 					}
 				}
 				++i;
 			}
+			return this;
 		}
-		public function replaceRange(start:uint, end:uint, str:String, strStart:uint = 0):void {
+		public function replaceRange(start:uint, end:uint, str:String, strStart:uint = 0):StringBuffer {
 			var a:ByteArray = buffer, i:uint = strStart, e:uint = str.length;
 			if (end > a.length) end = a.length;
 			while (int(start < end) & int(i < e)) a[start++] = str.charCodeAt(i++);
+			return this;
 		}
+		//} REPLACE
 		/**
 		 * Discards the current buffers and creates new ones.
 		 * @return ByteArray:	The old ByteArray buffer.
 		 */
-		public function reset():ByteArray {
-			if (!buffer.length) throw new Error("May not reset an empty StringBuffer.")
+		public function reset(newSize:uint = 0):ByteArray {
 			var a:ByteArray = buffer;
 			buffer = new ByteArray;
 			backBuffer = new ByteArray;
+			buffer.length = newSize;
 			return a;
 		}
-		public function reverse():void {
+		public function reverse():StringBuffer {
 			var a:ByteArray = buffer, i:uint, l:uint = a.length, v:int;
 			while (i < l) {
 				v = a[i];
@@ -537,11 +615,13 @@ package skyboy.utils {
 				a[l] = v;
 				++i, --l;
 			}
+			return this;
 		}
-		public function setByteAt(i:uint, v:int):void {
+		public function setByteAt(i:uint, v:int):StringBuffer {
 			if (i < buffer.length) buffer[i] = v;
+			return this;
 		}
-		public function setCharAt(i:uint, char:String):void {
+		public function setCharAt(i:uint, char:String):StringBuffer {
 			if (!char || char.length !== 1) throw new ArgumentError("Char length must be 1.");
 			if (i >= length) throw new ArgumentError("Index " + i + " outside range " + length + ".");
 			backBuffer.clear();
@@ -551,6 +631,7 @@ package skyboy.utils {
 			buffer.clear();
 			buffer.writeBytes(backBuffer, 0, backBuffer.length);
 			backBuffer = new ByteArray;
+			return this;
 		}
 		/**
 		 * Returns the length of the string to the first null byte.
@@ -569,7 +650,7 @@ package skyboy.utils {
 		}
 		public function subbuf(start:uint = 0, len:uint = uint.MAX_VALUE):StringBuffer {
 			var a:StringBuffer = new StringBuffer();
-			a.appendStringBuffer(this, start, end);
+			a.appendStringBuffer(this, start, len);
 			return a;
 		}
 		public function subbuffer(start:uint,  end:uint = uint.MAX_VALUE):StringBuffer {
@@ -579,7 +660,7 @@ package skyboy.utils {
 			return a;
 		}
 		public function substr(start:uint = 0, len:uint = uint.MAX_VALUE):String {
-			if (end) return toString(start, Math.min(Number(start) + Number(end), uint.MAX_VALUE));
+			if (len) return toString(start, Math.min(Number(start) + Number(len), uint.MAX_VALUE));
 			return '';
 		}
 		public function substring(start:uint,  end:uint = uint.MAX_VALUE):String {
@@ -588,7 +669,7 @@ package skyboy.utils {
 		}
 		public function toString(start:uint = 0, end:uint = 0):String {
 			var a:ByteArray = buffer, i:int = a.position;
-			if (int(!end) | int(end > a.length)) end = a.length;
+			if (int(!end) | int(end > i)) end = i;
 			if (start >= end) return '';
 			a.position = start;
 			var r:String = a.readUTFBytes(end - start);
@@ -607,6 +688,19 @@ package skyboy.utils {
 			buffer.position = i;
 			buffer.length = i;
 			return i;
+		}
+		/**
+		 * Trims the internal array down to the passed value if $size is > 0; otherwise trims the inernal array to the first null byte.
+		 * If the string contains no null bytes and $size is 0, this method does nothing.
+		 * @param  uint: $size	The length to trim the interal array to. (default: 0)
+		 * @return StringBuffer:	A reference to this StringBuffer.
+		 */
+		public function trimToSizeVoid($size:uint = 0):StringBuffer {
+			var i:uint = $size || size();
+			if (i >= buffer.length) return this;
+			buffer.position = i;
+			buffer.length = i;
+			return this;
 		}
 	}
 }
