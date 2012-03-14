@@ -96,16 +96,18 @@ package skyboy.serialization {
 			encMap[String] 			= new eS(this);
 			encMap['string'] 		= encMap[String];
 			encMap[XML] 			= new eX(this);
-			encMap['xml'] 			= encMap[XML];
+			encMap['xml'] 			= encMap[XML];// XMLList is of type xml and not subclass of XML
 			encMap[XMLList] 		= new eXL(this);
 			encMap[Date] 			= new eDT(this);
 			encMap[Number] 			= new eN(this);
 			encMap['number'] 		= encMap[Number];
 			encMap[Dictionary] 		= new eD(this);
+			encMap[RegExp]			= new eRE(this);
+			encMap[ByteArray]		= new eBA(this);
 			encMap[Object] 			= new eO(this);
 			encMap[Boolean] 		= new eB(this);
 			encMap['boolean'] 		= encMap[Boolean];
-			encMap['object'] 		= new eO2(this); // nulls are of type object
+			encMap['object'] 		= new eO2(this);// nulls are of type object
 			encMap['undefined'] 	= encMap['object'];
 		}
 		//{ STATE
@@ -140,7 +142,8 @@ package skyboy.serialization {
 				c = tryToJSON(data);
 				if (c !== null) return c;
 			}
-			sky::encodeObj2(data, ret, enc, encMap);
+			var f:F = encMap[typeof data];
+			f.f(data, ret, enc, encMap);
 			i = ret.position;
 			ret.position = 0;
 			c = ret.readUTFBytes(i);
@@ -254,7 +257,8 @@ package skyboy.serialization {
 						rtn.writeInt(0x6C73652C); // lse,
 					}
 				}
-				rtn.writeUTFBytes(String(a[i]));
+				if (a[i]) rtn.writeInt(0x74727565); // true
+				else rtn.writeByte(0x66), rtn.writeInt(0x616C7365); // f, alse
 			}
 			rtn.writeByte(0x5D);// ]
 			return;
@@ -287,7 +291,9 @@ package skyboy.serialization {
 			rtn.writeInt(0x616C7365); // alse
 		}
 		sky function encodeDate(a:Date, rtn:ByteArray, enc:Vector.<int>, map:Dictionary):void {
-			rtn.writeUTFBytes(String(a.getTime()));
+			rtn.writeByte(0x22);// "
+			rtn.writeUTFBytes(String(a));
+			rtn.writeByte(0x22);// "
 		}
 		sky function encodeDict(dic:Dictionary, rtn:ByteArray, enc:Vector.<int>, map:Dictionary):void {
 			rtn.writeByte(0x7B);// {
@@ -304,7 +310,7 @@ package skyboy.serialization {
 					f.f(e, rtn, enc, map);
 					rtn.writeByte(0x2C);
 				} else if (b is Date) {e = dic[b];
-					sky::encodeString(String((b as Date).getTime()), rtn, enc, true);
+					sky::encodeString(String(b), rtn, enc, true);
 					f = map[typeof e];
 					f.f(e, rtn, enc, map);
 					rtn.writeByte(0x2C);
@@ -382,10 +388,11 @@ package skyboy.serialization {
 			rtn.writeByte(0x22);// "
 			for (; i < e; ++i) {
 				c = data.charCodeAt(i);
-				if (int(c >= 0x20) & int(c <= 0x7E)) { // highest is 0x7E. common case
-					rtn.writeByte(c);
+				if (int(c >= 0x20) & int(c <= 0x7E)) {// highest is 0x7E. common case
+					if (int(c === 0x22) | int(c === 0x5C)) rtn.writeShort(encRLs[c]);
+					else rtn.writeByte(c);
 				} else {
-					if (int(c === 0x22) | int(c === 0x5C) | int(c === 0x0A) | int(c === 0x0C) | int(c === 0x0D) | int(c === 0x09) | int(c === 0x08)) {
+					if (int(c === 0x0A) | int(c === 0x0C) | int(c === 0x0D) | int(c === 0x09) | int(c === 0x08)) {
 						rtn.writeShort(encRLs[c]);
 					} else {
 						c = enc[c];
@@ -398,6 +405,25 @@ package skyboy.serialization {
 			if (colon) rtn.writeByte(0x3A);// :
 			return;
 			var c:int;
+		}
+		sky function encodeRegEx(data:RegExp, rtn:ByteArray, enc:Vector.<int>):void {
+			rtn.writeByte(0x22);// "
+			var a:int = rtn.position;
+			sky::encodeString(data.source, rtn, enc);
+			var i:int = rtn.position - 1;
+			rtn.position = a;
+			rtn.writeByte(0x2F);// /
+			rtn.position = i;
+			rtn.writeByte(0x2F)// /
+			if (data.global) rtn.writeByte(0x67);// g
+			if (data.ignoreCase) rtn.writeByte(0x69);// i
+			if (data.multiline) rtn.writeByte(0x6D);// m
+			if (data.dotall) rtn.writeByte(0x73);// s
+			if (data.extended) rtn.writeByte(0x78);// x
+			rtn.writeByte(0x22);// "
+		}
+		sky function encodeByteArray(data:ByteArray, rtn:ByteArray, enc:Vector.<int>):void {
+			sky::encodeString(String(data), rtn, enc);
 		}
 		//}
 		//}
@@ -428,7 +454,7 @@ package skyboy.serialization {
 				rtn = handleNumber2(data, e);
 			} else if ((int(c === 0x74) | int(c === 0x66) | int(c === 0x6E))) {
 				rtn = handleLit(data, e, a);
-			} else  error(data, i);
+			} else error(data, i);
 			return rtn;
 		}
 		public static function decode(data:String):* {
@@ -974,7 +1000,8 @@ internal class eX extends E {
 		super(j);
 	}
 	public override function f(data:*, rtn:ByteArray, enc:Vector.<int>, map:Dictionary):void {
-		j.sky::encodeXML(data, rtn, enc, map);
+		if (data is XMLList) j.sky::encodeXMLL(data, rtn, enc, map);
+		else j.sky::encodeXML(data, rtn, enc, map);
 	}
 }
 internal class eXL extends E {
@@ -999,6 +1026,23 @@ internal class eS extends E {
 	}
 	public override function f(data:*, rtn:ByteArray, enc:Vector.<int>, map:Dictionary):void {
 		j.sky::encodeString(data, rtn, enc);
+	}
+}
+internal class eRE extends E {
+	public function eRE(j:skyboy.serialization.JSON):void {
+		super(j);
+	}
+	public override function f(data:*, rtn:ByteArray, enc:Vector.<int>, map:Dictionary):void {
+		j.sky::encodeRegEx(data, rtn, enc);
+	}
+
+}
+internal class eBA extends E {
+	public function eBA(j:skyboy.serialization.JSON):void {
+		super(j);
+	}
+	public override function f(data:*, rtn:ByteArray, enc:Vector.<int>, map:Dictionary):void {
+		j.sky::encodeByteArray(data, rtn, enc);
 	}
 }
 new skyboy.serialization.JSON();
