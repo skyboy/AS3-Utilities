@@ -53,18 +53,24 @@ package skyboy.text {
 	import flash.events.*;
 	import flash.text.TextField;
 	import flash.utils.ByteArray;
+	import flash.utils.Endian;
 	import flash.utils.Timer;
 	public class Typewriter extends TextField {
 		public static const FRAME:String = "frame";
 		public static const TIME:String = "time";
-		public var stutter:Boolean, stutterTime:int;
-		private var _speed:int, _type:String, timer:Timer, pos:int, d:int, buffer:ByteArray = new ByteArray, s:Boolean, stutterOn:Array, sOt:String;
+		public var stutterTime:int;
+		private var _stutter:Boolean, _speed:int, _type:String, timer:Timer, pos:int, d:int, buffer:ByteArray = new ByteArray, s:Boolean, stutterOn:Array, sOt:String;
 		public function Typewriter(speed:int = 1, stutter:Boolean = false, type:String = "frame", stutterTime:int = 4) {
 			this.stutter = stutter;
 			this.speed = speed;
 			this.type = type;
 			this.stutterTime = stutterTime;
 			stutterText = ",-.!:;?\n\u2013-\u2015\u2026";
+		}
+		public function get stutter():Boolean { return _stutter; }
+		public function set stutter(value:Boolean):void {
+			_stutter = value;
+			s = value;
 		}
 		public function get stutterText():String { return sOt; }
 		public function set stutterText(a:String):void {
@@ -128,28 +134,32 @@ package skyboy.text {
 				pos = 0;
 			}
 		}
-		private function addCharacter():Boolean {
+		private function readUTFChar():int {
 			var buffer:ByteArray = this.buffer;
-			var a:int = buffer.position;
-			buffer.position = pos;
-			var b:String = buffer.readUTFBytes(1);
-			pos = buffer.position;
-			buffer.position = a;
-			a = b.charCodeAt(0);
-			if (s && stutterOn[a]) ++d;
-			if (stutter) if (d % stutterTime) { ++d;
+			var i:uint = buffer[pos++], a:int = i >>> 4;
+			if (!(a & 8))
+				return i & 0x7F;
+			if ((a & 14) === 3)
+				return ((i & 31) <<  6) | ((buffer[pos++] & 0x3F));
+			if (a === 14)
+				return ((i & 15) << 12) | ((buffer[pos++] & 0x3F) <<  6) | ((buffer[pos++] & 0x3F));
+			if (a === 15)
+				return ((i &  7) << 18) | ((buffer[pos++] & 0x3F) << 12) | ((buffer[pos++] & 0x3F) <<  6) | (buffer[pos++] & 0x3F);
+			return 0x3F;
+		}
+		private function addCharacter():Boolean {
+			var i:int = pos, a:int = readUTFChar();
+			if (_stutter) {
+				s = (int(d % stutterTime) === 0);
 				if (s) {
-					++pos;
-					super.appendText(b);
-					s = false;
+					if (stutterOn[a]) ++d;
+				} else {
+					++d;
+					pos = i;
+					return false
 				}
-				return false;
-			} else if (!s) {
-				s = true;
-				return false;
 			}
-			++pos;
-			super.appendText(b);
+			super.appendText(String.fromCharCode(a));
 			return true;
 		}
 		private function oE(e:Event):void {
