@@ -139,11 +139,11 @@ package skyboy.text {
 			var i:uint = buffer[pos++], a:int = i >>> 4;
 			if (!(a & 8))
 				return i & 0x7F;
-			if ((a & 14) === 3)
+			if ((a & 14) === 12)
 				return ((i & 31) <<  6) | ((buffer[pos++] & 0x3F));
 			if (a === 14)
 				return ((i & 15) << 12) | ((buffer[pos++] & 0x3F) <<  6) | ((buffer[pos++] & 0x3F));
-			if (a === 15)
+			if (a === 15) if (i & 15 < 8)
 				return ((i &  7) << 18) | ((buffer[pos++] & 0x3F) << 12) | ((buffer[pos++] & 0x3F) <<  6) | (buffer[pos++] & 0x3F);
 			return 0x3F;
 		}
