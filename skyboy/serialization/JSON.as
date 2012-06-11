@@ -104,11 +104,12 @@ package skyboy.serialization {
 			encMap[Dictionary] 		= new eD(this);
 			encMap[RegExp]			= new eRE(this);
 			encMap[ByteArray]		= new eBA(this);
-			encMap[Object] 			= new eO(this);
 			encMap[Boolean] 		= new eB(this);
 			encMap['boolean'] 		= encMap[Boolean];
 			encMap['object'] 		= new eO2(this);// nulls are of type object
 			encMap['undefined'] 	= encMap['object'];
+			i = pow10.length;
+			while (i--) pow10[i] = Math.pow(10, i);
 		}
 		//{ STATE
 		private var containsSlash:int;
@@ -117,6 +118,7 @@ package skyboy.serialization {
 		private const encRLs:Vector.<int> = new Vector.<int>(0x5D, true);
 		private const encD:Vector.<int> = new Vector.<int>(0x80, true);
 		private const encMap:Dictionary = new Dictionary();
+		private const pow10:Vector.<Number> = new Vector.<Number>(309, true);
 		private var i:int;
 		//}
 		//{ DEBUGVALS
@@ -147,7 +149,7 @@ package skyboy.serialization {
 			i = ret.position;
 			ret.position = 0;
 			c = ret.readUTFBytes(i);
-			ret.length = 0;
+			ret.clear();
 			return c;
 		}
 		public static function encode(data:*):String {
@@ -378,16 +380,15 @@ package skyboy.serialization {
 		}
 		sky function encodeNumber(e:Number, rtn:ByteArray):void {
 			if ((e * 0) !== 0) {
-				rtn.writeByte(0x30);
+				rtn.writeInt(0x6E756C6C);
 				return;
 			}
 			rtn.writeUTFBytes(String(e));
 		}
 		sky function encodeString(data:String, rtn:ByteArray, enc:Vector.<int>, colon:Boolean = false):void {
-			var i:int, e:int = data.length;
+			var i:int;// , e:int = data.length;
 			rtn.writeByte(0x22);// "
-			for (; i < e; ++i) {
-				c = data.charCodeAt(i);
+			for (; (c = data.charCodeAt(i)) * 0 === 0; ++i) {
 				if (int(c >= 0x20) & int(c <= 0x7E)) {// highest is 0x7E. common case
 					if (int(c === 0x22) | int(c === 0x5C)) rtn.writeShort(encRLs[c]);
 					else rtn.writeByte(c);
@@ -404,7 +405,7 @@ package skyboy.serialization {
 			rtn.writeByte(0x22); // "
 			if (colon) rtn.writeByte(0x3A);// :
 			return;
-			var c:int;
+			var c:int = 0;
 		}
 		sky function encodeRegEx(data:RegExp, rtn:ByteArray, enc:Vector.<int>):void {
 			rtn.writeByte(0x22);// "
@@ -414,7 +415,7 @@ package skyboy.serialization {
 			rtn.position = a;
 			rtn.writeByte(0x2F);// /
 			rtn.position = i;
-			rtn.writeByte(0x2F)// /
+			rtn.writeByte(0x2F);// /
 			if (data.global) rtn.writeByte(0x67);// g
 			if (data.ignoreCase) rtn.writeByte(0x69);// i
 			if (data.multiline) rtn.writeByte(0x6D);// m
@@ -423,7 +424,26 @@ package skyboy.serialization {
 			rtn.writeByte(0x22);// "
 		}
 		sky function encodeByteArray(data:ByteArray, rtn:ByteArray, enc:Vector.<int>):void {
-			sky::encodeString(String(data), rtn, enc);
+			var i:int, e:int = data.length;
+			rtn.writeByte(0x22);// "
+			for (; i !== e; ++i) {
+				c = data[i];
+				if (int(c >= 0x20) & int(c <= 0x7E)) {// highest is 0x7E. common case
+					if (int(c === 0x22) | int(c === 0x5C)) rtn.writeShort(encRLs[c]);
+					else rtn.writeByte(c);
+				} else {
+					if (int(c === 0x0A) | int(c === 0x0C) | int(c === 0x0D) | int(c === 0x09) | int(c === 0x08)) {
+						rtn.writeShort(encRLs[c]);
+					} else {
+						c = enc[c];
+						rtn.writeShort(0x5C75); // \u
+						rtn.writeInt(c);
+					}
+				}
+			}
+			rtn.writeByte(0x22);// "
+			return;
+			var c:int = 0;
 		}
 		//}
 		//}
@@ -455,6 +475,7 @@ package skyboy.serialization {
 			} else if ((int(c === 0x74) | int(c === 0x66) | int(c === 0x6E))) {
 				rtn = handleLit(data, e, a);
 			} else error(data, i);
+			strArr.clear();
 			return rtn;
 		}
 		public static function decode(data:String):* {
@@ -486,7 +507,6 @@ package skyboy.serialization {
 			var rtn:ByteArray = strArr;
 			if (inx & int(c < 0x80)) rtn[0] = c, c = t, ++a;
 			var enc:Vector.<int> = encD;
-			rtn.position = 0;
 			const low:int = 0x7F, u:int = 0x75, x:int = 0x78, slash:int = 0x5C;
 			const two:int = 2, seven:int = 7, nine:int = 9, space:int = 0x20, tt:int = 22;
 			while (a < e) {
@@ -506,23 +526,23 @@ package skyboy.serialization {
 						if (uint(t | p1 | p2 | p) > 15) { // comparing with uint instead of int means the <0 check is combined
 							error(data, a - 6, "Expected 0-F after \\u", 6);
 						}
-						rtn.position = inx;
 						// 0xE08080 | ((i & 0xF000) << 4) | ((i & 0xFC0) << 2) | (i & 0x3F)
 						/*p1 = (p1 << two) | (p2 >> two);
 						p = ((p2 << two) | p) & 0x3F;
 						rtn.writeInt(((0xE0 | t) << 24) | ((0x80 | p1) << 16) | ((0x80 | p) << 8));
 						//*/
-						if (!(p1 | (t | (p2 & 8)))) {
-							++inx, rtn.writeByte(p|(p2<<4));
-							c = data.charCodeAt(++a);
-							continue;
-						} else {
-							p |= (p2 << 4) | (p1 << 8);
-							rtn.writeInt((0xE08080 | (t << 16) | ((p & 0xFC0) << 2) | (p & 0x3F)) << 8);
-							inx += 3;
+						if (!(p1 | (t | (p2 & 8)))) { // value < 0x80
+							rtn[inx] = p | (p2 << 4); ++inx;
 							c = data.charCodeAt(++a);
 							continue;
 						}
+						rtn[inx] = 0xE0 | t; ++inx;
+						p |= ((p2 << 4) | (p1 << 8));
+						rtn.position = inx;
+						rtn.writeShort(0x8080 | (((p & 0xFC0) << 2) | (p & 0x3F)));
+						++inx, ++inx;
+						c = data.charCodeAt(++a);
+						continue;
 					} else if (c === x) {
 						t = data.charCodeAt(++a) - 0x30;
 						t -= (seven & -int(t > nine)) | (space & -int(t > tt));
@@ -531,18 +551,23 @@ package skyboy.serialization {
 						if (uint(t | p) > 15) { // comparing with uint instead of int means the <0 check is combined
 							error(data, a - 4, "Expected 0-F after \\x", 4);
 						}
+						if (!(t & 8)) { // value < 0x80
+							rtn[inx] = (t << 4) | p; ++inx;
+							c = data.charCodeAt(++a);
+							continue;
+						}
 						c = (t << 4) | p;
 						rtn.position = inx;
 						rtn.writeShort(((0xC0 | ((c >> 6) & 0x1F)) << 8) | (0x80 | (c & 0x3F)));
-						++inx;
-						++inx;
+						++inx, ++inx;
 						c = data.charCodeAt(++a);
 						continue;
 					}
 				} else if (c === end) {
 					i = a;
 					rtn.position = 0;
-					return rtn.readUTFBytes(inx);
+					rtn.length = inx;
+					return String(rtn);//.readUTFBytes(inx);
 				} else if (c > low) {
 					return handleMBString(data, e, c, rtn, inx, a, end);
 				}
@@ -590,7 +615,8 @@ package skyboy.serialization {
 					i = a;
 					inx = rtn.position;
 					rtn.position = 0;
-					return rtn.readUTFBytes(inx);
+					rtn.length = inx;
+					return String(rtn);//.readUTFBytes(inx);
 				}
 				c = 0xF0000000 | ((c & 0x1C0000) << 6) | 0x800000 | ((c & 0x3F000) << 4) | 0x8000 | ((c & 0xFC0) << 2) | 0x80 | (c & 0x3F);
 				rtn.writeInt(c);
@@ -599,11 +625,11 @@ package skyboy.serialization {
 			return null;
 		}
 		private function handleNumber2(data:String, e:int):Number {
-			var a:int = i, c:int = data.charCodeAt(a), r:Number = 0, t:int = 1;
-			var n:Number, ex:int, exn:int, d:Number = 10;
+			var a:int = i, c:int = data.charCodeAt(a), r:Number = 0, t:Number = 1;
+			var n:Number = 1, ex:int, exn:int, d:int = 3;
 			if (c == 0x2D) {
 				c = data.charCodeAt(++a);
-				n = 2;
+				n = -1;
 			} else if (c == 0x2B) {
 				c = data.charCodeAt(++a);
 			}
@@ -624,13 +650,13 @@ package skyboy.serialization {
 					exn = 1;
 					c = data.charCodeAt(++a);
 				} else if (c == 0x2B) c = data.charCodeAt(++a);
-				t = 3;
-				while (int(c > 0x2F) & int(c < 0x3A) & int(Boolean(t--))) {
+				while (c === 0x30) c = data.charCodeAt(++a);
+				while (int(c > 0x2F) & int(c < 0x3A) & int(Boolean(d--))) {
 					ex = (ex * 10) + (c - 0x30);
 					c = data.charCodeAt(++a);
 				}
-				while (int(c > 0x2F) & int(c < 0x3A)) c = data.charCodeAt(++a); // consume the remainder
 				t = 10;
+				while (int(c > 0x2F) & int(c < 0x3A)) ex = 400, c = data.charCodeAt(++a); // consume the remainder
 				if (exn) {
 					if (ex < 325) while (ex) {
 						r /= ((ex & 1) * t + (~ex & 1));
@@ -641,7 +667,7 @@ package skyboy.serialization {
 						t *= t;
 					} else r = 0; // >= 325 for negative exponents results in 0
 				} else {
-					if (ex < 309)while (ex) {
+					if (ex < 309) while (ex) {
 						r *= ((ex & 1) * t + (~ex & 1));
 						ex >>>= 1;
 						t *= t;
@@ -657,29 +683,26 @@ package skyboy.serialization {
 					error(data, a);
 				}
 			}
-			return (1 - n) * r;
+			return n * r;
 		}
 		private function handleFNumber(data:String, e:int, a:int, c:int, r:Number, n:int):Number { // original method
 			if ((int(c > 0x2F) & int(c < 0x3A))) {
-				r = c - 0x30;
-				while (int((c = int(data.charCodeAt(++a))) > 0x2F) & int(c < 0x3A)) {
-					c -= 0x30;
+				do {
 					r *= 10;
+					c -= 48;
 					r += c;
-					// TODO: largest represtnable number in Number is over 18 digits; can't use int here, performance pentalty for extremely large values\
-					// but beyond 52 bits of precision, Number loses accuracy. @parseFloat()@/@Number()@ may limit to 53 bits in a long. investigate.
-				}
+				} while (int((c = int(data.charCodeAt(++a))) > 0x2F) & int(c < 0x3A));
 				if (int(c === 0x20) | int(c === 0x09) | int(c === 10) | int(c === 13) | int(c === 0x2C) | int((c | 0x20) === 0x7D)) {
 					i = a - 1;
 					return n * r;
 				}
 			}
-			var t:int = 1, ex:int, exn:int, d:Number = 10;
-			if (c === 0x2E) {
-				while (int((c = int(data.charCodeAt(++a))) > 0x2F) & int(c < 0x3A)) {
+			var t:int = 3, ex:int, exn:int, d:Number = 10;
+			if (c === 0x2E) { // inaccurate after 16 digits
+				while (int((c = data.charCodeAt(++a)) > 0x2F) & int(c < 0x3A)) {
 					c -= 0x30;
-					t *= 10;
-					r += c / t;
+					r += c / d;
+					d *= 10;
 				}
 				if (int(c === 0x20) | int(c === 0x09) | int(c === 10) | int(c === 13) | int(c === 0x2C) | int((c | 0x20) === 0x7D)) {
 					i = a - 1;
@@ -688,42 +711,32 @@ package skyboy.serialization {
 			}
 			if ((c | 0x20) === 0x65) {
 				c = data.charCodeAt(++a);
-				if (c == 0x2D) {
+				if (c === 0x2D) {
 					exn = 1;
 					c = data.charCodeAt(++a);
-				} else if (c == 0x2B) c = data.charCodeAt(++a);
-				t = 3;
+				} else if (c === 0x2B) c = data.charCodeAt(++a);
+				while (c === 0x30) c = data.charCodeAt(++a); // consume leading 0s
 				while (int(c > 0x2F) & int(c < 0x3A) & int(Boolean(t--))) { // limit the number of digits gathered for exponent to 3.
 					ex *= 10;
 					c -= 0x30;
 					ex += c;
-					t += int(int(!c) & int(t == 2)); // consume leading 0s
 					c = data.charCodeAt(++a);
 				}
 				if (int(c > 0x2F) & int(c < 0x3A)) {
-					d = NaN; // mark that we have gone over 3 digits (excluding leading 0s); this value is too great
+					++t; // mark that we have gone over 3 digits (excluding leading 0s); this value is too great
 					do {
 						c = data.charCodeAt(++a); // consume the remainder.
 					} while (int(c > 0x2F) & int(c < 0x3A));
 				}
-				t = 10;
 				if (exn) {
-					if (int(ex < 325) & int(d == d)) while (ex) {
-						r /= ((ex & 1) * t + (~ex & 1));
-						ex >>>= 1;
-						t *= t;
-						r /= ((ex & 1) * t + (~ex & 1));
-						ex >>>= 1;
-						t *= t;
+					if (int(ex < 325) & t) {
+						if (ex > 307)
+							t = ex - 307, ex -= t, r /= pow10[t];
+						r /= pow10[ex];
 					} else r = 0; // >= 325 for negative exponents results in 0
 				} else {
-					if (int(ex < 309) & int(d == d)) while (ex) {
-						r *= ((ex & 1) * t + (~ex & 1));
-						ex >>>= 1;
-						t *= t;
-						r *= ((ex & 1) * t + (~ex & 1));
-						ex >>>= 1;
-						t *= t;
+					if (int(ex < 309) & t) {
+						r *= pow10[ex];
 					} else r = Infinity; // >= 309 for positive exponents results in Infinity
 				}
 				if (int(c === 0x20) | int(c === 0x09) | int(c === 10) | int(c === 13) | int(c === 0x2C) | int((c | 0x20) === 0x7D)) {
@@ -739,7 +752,7 @@ package skyboy.serialization {
 			return NaN; // not reached
 		}
 		private function handleNumber(data:String, e:int):Number { // fast int-first method
-			var a:int = i, c:int = data.charCodeAt(a), r:int, n:int = 1, C:int;
+			var a:int = i, c:int = data.charCodeAt(a), r:uint, n:int = 1, C:int;
 			if (c === 0x2D) {
 				c = data.charCodeAt(++a);
 				n = -1;
@@ -748,17 +761,17 @@ package skyboy.serialization {
 			}
 			if ((int(c > 0x2F) & int(c < 0x3A))) {
 				r = c - 0x30;
-				while (Boolean(int((c = int(data.charCodeAt(++a))) > 0x2F) & int(c < 0x3A) & int(C <= 9))) {
+				while (Boolean(int((c = data.charCodeAt(++a)) > 0x2F) & int(c < 0x3A) & int(C < 9))) {
 					r *= 10;
 					c -= 48;
 					r += c;
 					++C;
 				}
-				if (C > 9) return handleFNumber(data, e, a, c, r, n);
 				if (int(c === 0x20) | int(c === 0x09) | int(c === 10) | int(c === 13) | int(c === 0x2C) | int((c | 0x20) === 0x7D)) {
 					i = a - 1;
 					return n * r;
 				}
+				if (C >= 9) return handleFNumber(data, e, a, c, r, n);
 			}
 			if (c === 0x2E) return handleFNumber(data, e, a, c, r, n);
 			if ((c | 0x20) === 0x65) return handleFNumber(data, e, a, c, r, n);
@@ -902,7 +915,7 @@ package skyboy.serialization {
 import flash.utils.ByteArray;
 import flash.utils.Dictionary;
 import skyboy.serialization.JSON;
-internal namespace sky = "skyboy/serialization/JSON";
+internal namespace sky = "skyboy.serialization::JSON";
 internal interface F {
 	function f(data:*, rtn:ByteArray, enc:Vector.<int>, map:Dictionary):void;
 }
@@ -912,7 +925,6 @@ internal class E implements F {
 		j = $j;
 	}
 	public function f(data:*, rtn:ByteArray, enc:Vector.<int>, map:Dictionary):void {
-		
 	}
 }
 internal class eA extends E {
@@ -979,14 +991,6 @@ internal class eD extends E {
 		j.sky::encodeDict(data, rtn, enc, map);
 	}
 }
-internal class eO extends E {
-	public function eO(j:skyboy.serialization.JSON):void {
-		super(j);
-	}
-	public override function f(data:*, rtn:ByteArray, enc:Vector.<int>, map:Dictionary):void {
-		j.sky::encodeObject(data, rtn, enc, map);
-	}
-}
 internal class eO2 extends E {
 	public function eO2(j:skyboy.serialization.JSON):void {
 		super(j);
@@ -1035,7 +1039,6 @@ internal class eRE extends E {
 	public override function f(data:*, rtn:ByteArray, enc:Vector.<int>, map:Dictionary):void {
 		j.sky::encodeRegEx(data, rtn, enc);
 	}
-
 }
 internal class eBA extends E {
 	public function eBA(j:skyboy.serialization.JSON):void {
